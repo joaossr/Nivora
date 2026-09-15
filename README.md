@@ -84,7 +84,25 @@ npx vercel --prod
   Supabase; marcar/desmarcar hábito, editar um dia no calendário e
   "Reiniciar dia" sincronizam XP com o perfil do usuário. Cada hábito
   também pode ser **editado** (nome, categoria, emoji, XP) ou **excluído**
-  (o que apaga também o histórico de conclusões dele) direto no card.
+  (o que apaga também o histórico de conclusões dele) direto no card. Metas
+  também podem ser editadas e excluídas.
+- **Hábitos vinculados a metas**: ao criar/editar um hábito, dá pra marcar
+  quais metas ele alimenta e quanto cada conclusão soma nelas (`incremento`
+  — por padrão 1, mas pode ser qualquer número, útil pra metas em dinheiro
+  onde cada conclusão vale, por exemplo, R$50). Uma meta pode ter vários
+  hábitos vinculados; um hábito pode alimentar várias metas ao mesmo tempo.
+  O progresso da meta (`atual`, %, checkpoints, conclusão) é **recalculado
+  automaticamente** — do zero, a partir do histórico de conclusões — toda
+  vez que um hábito vinculado é marcado, desmarcado ou editado no
+  calendário, incluindo dias retroativos. Metas sem nenhum hábito vinculado
+  mantêm o último valor conhecido (o `atual` não é forçado a zero).
+- **Checkpoints opcionais**: cada meta pode ter marcos intermediários
+  personalizados (ex.: 15/30/60 dias de uma meta de 90). São preenchidos e
+  desfeitos sozinhos conforme o progresso avança ou recua, aparecem como
+  pontos na barra de progresso e como uma lista com ✓/○ no card da meta. O
+  modal tem um botão "Sugerir automaticamente" (25%/50%/75% do alvo) só
+  como atalho — o usuário pode adicionar, editar ou remover qualquer
+  checkpoint livremente, e metas sem checkpoint nenhum funcionam normal.
 - **Conquistas com desbloqueio automático**: calculadas a partir do
   progresso real (XP total, streaks, nº de hábitos, dias perfeitos, metas
   concluídas, compras na loja) — sem tabela própria, recalculadas a cada
@@ -126,7 +144,13 @@ npx vercel --prod
 - `public.habit_logs`: uma linha por `(habit_id, data)` — o histórico real
   de conclusões, base de streaks, taxas, calendário, estatísticas e
   relatórios.
-- `public.goals`: metas do usuário.
+- `public.goals`: metas do usuário (`atual`/`alvo` são `numeric`, aceitam
+  decimais para metas em dinheiro). `concluida_em` marca quando o alvo foi
+  atingido pela primeira vez.
+- `public.habit_goals`: vínculo N:N entre `habits` e `goals`, com
+  `incremento` (quanto cada conclusão do hábito soma na meta).
+- `public.goal_checkpoints`: marcos opcionais de uma meta (`valor`,
+  `atingido`, `atingido_em`) — recalculados junto com o progresso.
 - `public.mission_claims`: uma linha por `(mission_key, period_key)`
   resgatado — evita resgatar a mesma missão duas vezes no período.
 - RLS em todas as tabelas: cada usuário só enxerga e altera as próprias
@@ -165,9 +189,11 @@ Isso **não** dá para ser feito por código — precisa ser feito uma vez no
 
 A Loja troca moedas por recompensas — uma mistura de vantagens no app
 (congelar sequência, XP em dobro, temas, relatórios avançados, slot de meta
-extra) e recompensas da vida real que o usuário se dá por progredir (açaí,
-lanche, tempo livre, sair, iFood, recompensa premium, comprar algo que
-quiser). As recompensas "da vida real" são apenas simbólicas: comprá-las só
+extra) e recompensas da vida real que o usuário se dá por progredir (doce
+ou lanche favorito, pedir comida, tarde de descanso, sair para se divertir,
+recompensa premium, comprar algo que quiser). Cada item tem uma imagem
+própria (`public/rewards/*.svg`) que ocupa o card inteiro, não só um ícone
+no meio. As recompensas "da vida real" são apenas simbólicas: comprá-las só
 desconta moedas e conta para a conquista "Primeira compra" — não há nenhum
 efeito automático no app (é o próprio usuário que se recompensa depois).
 
