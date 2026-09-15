@@ -60,13 +60,18 @@ input,select{font-family:inherit}
 
 .sidebar-foot{margin-top:auto;padding-top:20px}
 .userbox{display:flex;align-items:center;gap:13px;padding:16px 4px 18px;border-top:1px solid var(--line)}
-.avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#2b3a8f,#1e2a6b);display:grid;place-items:center;font-weight:700;font-size:14px;color:#c7d2fe}
+.avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#2b3a8f,#1e2a6b);display:grid;place-items:center;font-weight:700;font-size:14px;color:#c7d2fe;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
 .userbox strong{display:block;font-size:14.5px;font-weight:600}
 .userbox span{font-size:12px;color:var(--muted-2)}
 .mini-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:7px;width:135px;overflow:hidden}
 .mini-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#3b82f6,#7c5cf5)}
 .collapsed .userbox{justify-content:center}
 .collapsed .userbox .user-txt{display:none}
+.logout-mini{margin-left:auto;flex-shrink:0;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--muted-2);transition:background .15s,color .15s}
+.logout-mini svg{width:17px;height:17px}
+.logout-mini:hover{background:var(--card-2);color:var(--txt)}
+.collapsed .logout-mini{display:none}
 
 /* ---------- MAIN ---------- */
 .main{flex:1;min-width:0;padding:22px 26px 34px}
@@ -212,9 +217,12 @@ input,select{font-family:inherit}
 /* ---- CALENDÁRIO ---- */
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 .cal .hd{text-align:center;color:var(--muted-2);font-size:12.5px;font-weight:600;padding-bottom:6px}
-.cell{aspect-ratio:1;border-radius:12px;background:var(--card-2);border:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:#c4c4d8}
-.cell.empty{background:transparent;border:none}
+.cell{aspect-ratio:1;border-radius:12px;background:var(--card-2);border:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:#c4c4d8;cursor:pointer;transition:border-color .15s,transform .1s}
+.cell:hover{border-color:var(--line-2)}
+.cell:active{transform:scale(.97)}
+.cell.empty{background:transparent;border:none;cursor:default}
 .cell.today{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet) inset}
+.cell.futuro{cursor:not-allowed;opacity:.45}
 .cell .pips{display:flex;gap:3px;flex-wrap:wrap;margin-top:auto}
 .pip{width:6px;height:6px;border-radius:50%;background:var(--green)}
 .pip.miss{background:rgba(255,255,255,.14)}
@@ -273,11 +281,45 @@ td b{color:var(--txt);font-weight:600}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
 .sw[aria-pressed="true"]{background:var(--violet)}
 .sw[aria-pressed="true"]::after{transform:translateX(20px)}
-select,input[type=text],input[type=time]{background:var(--card-2);border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font-size:13.5px}
+select,input[type=text],input[type=time],input[type=number],input[type=date]{background:var(--card-2);border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font-size:13.5px;color-scheme:dark}
 
 /* ---- TOAST ---- */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#1b1b2e;border:1px solid var(--line-2);padding:13px 20px;border-radius:12px;font-size:13.5px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;z-index:50;box-shadow:0 12px 30px rgba(0,0,0,.5)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---- MODAL ---- */
+.modal-overlay{position:fixed;inset:0;background:rgba(4,4,10,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal-overlay.on{display:flex}
+.modal{width:100%;max-width:380px;padding:24px}
+.modal .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.modal .field label{font-size:12.5px;color:var(--muted)}
+.modal .field select,.modal .field input{width:100%}
+.modal .field-row{display:flex;gap:12px}
+.modal .field-row .field{flex:1}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+
+/* ---- AVATAR ---- */
+.avatar-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card-2);cursor:pointer}
+.avatar-opt:hover:not(:disabled){border-color:var(--line-2)}
+.avatar-opt:disabled{cursor:not-allowed}
+.avatar-opt.ativo{background:rgba(124,92,245,.14);border-color:var(--violet)}
+.avatar-opt-img{position:relative;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--card);flex-shrink:0}
+.avatar-opt-img img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-lock{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;background:rgba(8,8,16,.45)}
+
+/* ---- NOTIFICAÇÕES ---- */
+.notif-wrap{position:relative}
+.notif-panel{position:absolute;top:calc(100% + 12px);right:0;width:320px;max-width:80vw;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.55);z-index:70;overflow:hidden;display:none}
+.notif-panel.on{display:block}
+.notif-head{padding:14px 16px;font-weight:700;font-size:13.5px;border-bottom:1px solid var(--line)}
+.notif-empty{padding:20px 16px;color:var(--muted);font-size:13px}
+.notif-item{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.notif-item:last-child{border-bottom:none}
+.notif-item .em{font-size:18px;line-height:1}
+.notif-item .txt{flex:1;font-size:12.5px;color:var(--muted);line-height:1.5}
+.notif-item .txt strong{display:block;color:var(--txt);font-size:13px;font-weight:600;margin-bottom:2px}
+.notif-date{color:#9d8cf5;font-weight:600;background:none;border:none;padding:0;font-size:12px;margin-top:4px;cursor:pointer}
+.notif-date:hover{text-decoration:underline}
 
 /* ---- RESPONSIVO ---- */
 @media (max-width:1500px){
@@ -337,16 +379,16 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
 
     <div class="sidebar-foot">
       <div class="userbox">
-        <div class="avatar">US</div>
+        <div class="avatar" id="sideAvatar">US</div>
         <div class="user-txt">
-          <strong>João Sá</strong>
-          <span>Nível 2</span>
+          <strong id="sideName">Usuário</strong>
+          <span id="sideLevel">Nível 1</span>
           <div class="mini-bar"><i id="sideBar" style="width:76%"></i></div>
         </div>
+        <a href="#" id="logout" class="logout-mini" title="Sair" aria-label="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/><path d="m16 16 5-4-5-4M21 12H9"/></svg></a>
       </div>
       <nav class="nav">
         <a href="#configuracoes" data-page="configuracoes" title="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.9 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 4.6V4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/></svg><span class="lbl">Configurações</span></a>
-        <a href="#" id="logout" title="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/><path d="m16 16 5-4-5-4M21 12H9"/></svg><span class="lbl">Sair</span></a>
       </nav>
     </div>
   </aside>
@@ -362,9 +404,15 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
         </div>
       </div>
       <div class="top-actions">
-        <div class="coins">🪙 <span id="coinTop">240</span></div>
+        <div class="coins">🪙 <span id="coinTop">0</span></div>
         <button class="icon-btn" aria-label="Buscar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
-        <button class="icon-btn" aria-label="Notificações"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-3 7-3 7h18s-3-1-3-7"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge">1</span></button>
+        <div class="notif-wrap">
+          <button class="icon-btn" id="notifBtn" aria-label="Notificações" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-3 7-3 7h18s-3-1-3-7"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge" id="notifBadge">1</span></button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-head">Notificações</div>
+            <div id="notifList"></div>
+          </div>
+        </div>
         <div class="date-pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="4"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Seg, 14 de setembro de 2026</div>
       </div>
     </header>
@@ -417,13 +465,13 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
             <h3>Seu progresso</h3>
           </div>
           <div class="xp-head">
-            <h4>Nível 2</h4>
+            <h4 id="progLevel">Nível 1</h4>
             <span class="xp"><b id="lvlXp">115</b> / 150 XP</span>
           </div>
           <div class="bar pink"><i id="lvlBar" style="width:76.6%"></i></div>
           <div class="meta-row">
             <span>⭐ <b id="totalXp">215</b> XP totais</span>
-            <span>🔥 7 dias de streak geral</span>
+            <span>🔥 <b id="streakGeral">0</b> dias de streak geral</span>
           </div>
         </section>
 
@@ -473,10 +521,9 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
             <div class="card-h"><span style="font-size:17px">🏆</span><h3>Conquistas recentes</h3>
               <a href="#conquistas" data-page="conquistas" class="link">Ver todas <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
             </div>
-            <div class="achv">
-              <div class="hex">🔥</div>
-              <div class="txt"><strong>7 dias de sequência</strong><p>Você manteve o foco por 7 dias seguidos!</p></div>
-              <span class="when">10/09/2026</span>
+            <div class="achv" id="achvRecenteCard">
+              <div class="hex">🔒</div>
+              <div class="txt"><strong>Nenhuma ainda</strong><p>Complete hábitos para desbloquear conquistas.</p></div>
             </div>
           </section>
 
@@ -484,12 +531,7 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
             <div class="card-h"><span style="font-size:17px">🏔️</span><h3>Sua próxima meta</h3>
               <a href="#metas" data-page="metas" class="link">Ver metas <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
             </div>
-            <div class="goal">
-              <span class="em">🚩</span>
-              <div class="txt"><strong>Atingir Nível 3</strong><span class="nums"><b id="goalXp">115</b> / 300 XP</span>
-                <div class="bar violet" style="margin:12px 0 0"><i id="goalBar" style="width:38%"></i></div>
-              </div>
-            </div>
+            <div class="goal" id="proxMetaCard"></div>
           </section>
 
           <section class="banner">
@@ -502,7 +544,7 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
               <path d="M300 84c-2-6-1-12 2-15 2 3 3 7 2 10l6-4 3 6-5 5 7 14h-18l6-10z" fill="#1c0e33"/>
             </svg>
             <div class="veil"></div>
-            <div><p>Grandes resultados são construídos com pequenas ações diárias.</p><hr></div>
+            <div><p id="motivFrase">Grandes resultados são construídos com pequenas ações diárias.</p><hr></div>
           </section>
         </div>
       </div>
@@ -520,7 +562,7 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
     <section class="page" id="page-metas">
       <div class="page-head">
         <div><h2>Metas</h2><p>Objetivos maiores que seus hábitos ajudam a alcançar.</p></div>
-        <button class="btn primary" onclick="toast('Formulário de nova meta abriria aqui.')">+ Nova meta</button>
+        <button class="btn primary" id="newGoal">+ Nova meta</button>
       </div>
       <div class="cols c3" style="margin-bottom:18px">
         <div class="card pad stat"><span class="em">🎯</span><div class="n">3</div><div class="l">metas ativas</div></div>
@@ -533,17 +575,17 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
     <!-- ============ CALENDÁRIO ============ -->
     <section class="page" id="page-calendario">
       <div class="page-head">
-        <div><h2>Setembro de 2026</h2><p>Cada ponto verde é um hábito concluído no dia.</p></div>
+        <div><h2 id="calTitle">Calendário</h2><p>Clique em um dia para ver ou ajustar os hábitos concluídos.</p></div>
         <div style="margin-left:auto;display:flex;gap:10px">
-          <button class="btn" onclick="toast('Mês anterior: agosto de 2026.')">‹ Agosto</button>
-          <button class="btn" onclick="toast('Próximo mês: outubro de 2026.')">Outubro ›</button>
+          <button class="btn" id="calPrev">‹ Anterior</button>
+          <button class="btn" id="calNext">Próximo ›</button>
         </div>
       </div>
       <div class="cols c4" style="margin-bottom:18px">
-        <div class="card pad stat"><span class="em">✅</span><div class="n">41</div><div class="l">hábitos concluídos no mês</div></div>
-        <div class="card pad stat"><span class="em">🔥</span><div class="n">7</div><div class="l">dias seguidos</div></div>
-        <div class="card pad stat"><span class="em">📈</span><div class="n">68%</div><div class="l">taxa de conclusão</div></div>
-        <div class="card pad stat"><span class="em">⭐</span><div class="n">4</div><div class="l">dias perfeitos</div></div>
+        <div class="card pad stat"><span class="em">✅</span><div class="n" id="calResumoConcluidos">0</div><div class="l">hábitos concluídos no mês</div></div>
+        <div class="card pad stat"><span class="em">🔥</span><div class="n" id="calResumoStreak">0</div><div class="l">maior sequência atual</div></div>
+        <div class="card pad stat"><span class="em">📈</span><div class="n" id="calResumoTaxa">—</div><div class="l">taxa de conclusão</div></div>
+        <div class="card pad stat"><span class="em">⭐</span><div class="n" id="calResumoPerfeitos">0</div><div class="l">dias perfeitos</div></div>
       </div>
       <div class="card pad">
         <div class="cal" id="calGrid"></div>
@@ -564,10 +606,10 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
         </select>
       </div>
       <div class="cols c4" style="margin-bottom:18px">
-        <div class="card pad stat"><span class="em">⭐</span><div class="n" id="stTotal">215</div><div class="l">XP acumulado</div></div>
-        <div class="card pad stat"><span class="em">🔥</span><div class="n">7</div><div class="l">maior sequência</div></div>
-        <div class="card pad stat"><span class="em">📊</span><div class="n">68%</div><div class="l">média de conclusão</div></div>
-        <div class="card pad stat"><span class="em">🏅</span><div class="n">12</div><div class="l">semanas ativas</div></div>
+        <div class="card pad stat"><span class="em">⭐</span><div class="n" id="stTotal">0</div><div class="l">XP acumulado</div></div>
+        <div class="card pad stat"><span class="em">🔥</span><div class="n" id="stMelhorStreak">0</div><div class="l">maior sequência</div></div>
+        <div class="card pad stat"><span class="em">📊</span><div class="n" id="stMedia">—</div><div class="l">média de conclusão</div></div>
+        <div class="card pad stat"><span class="em">🏅</span><div class="n" id="stSemanas">0</div><div class="l">semanas ativas</div></div>
       </div>
       <div class="cols c2">
         <div class="card pad">
@@ -595,9 +637,9 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
         </div>
       </div>
       <div class="cols c3" style="margin-bottom:18px">
-        <div class="card pad stat"><span class="em">📄</span><div class="n">12</div><div class="l">relatórios gerados</div></div>
-        <div class="card pad stat"><span class="em">📈</span><div class="n">+18%</div><div class="l">vs. mês anterior</div></div>
-        <div class="card pad stat"><span class="em">⏱️</span><div class="n">42h</div><div class="l">dedicadas no mês</div></div>
+        <div class="card pad stat"><span class="em">📄</span><div class="n" id="relSemanasAtivas">0</div><div class="l">semanas com registro</div></div>
+        <div class="card pad stat"><span class="em">📈</span><div class="n" id="relVariacao">—</div><div class="l">vs. semana anterior</div></div>
+        <div class="card pad stat"><span class="em">🎯</span><div class="n" id="relTotalConcluido">0</div><div class="l">hábitos concluídos no período</div></div>
       </div>
       <div class="card pad">
         <div class="card-h"><h3>Desempenho semanal</h3></div>
@@ -625,11 +667,11 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
         <span class="tag" style="margin-left:auto">🪙 recompensas vão para a Loja</span>
       </div>
       <div class="card pad" style="margin-bottom:18px">
-        <div class="card-h"><h3>Missões diárias</h3><span class="tag" style="margin-left:auto">renova em 9h 12min</span></div>
+        <div class="card-h"><h3>Missões diárias</h3><span class="tag" style="margin-left:auto" id="renovaDia">renova à meia-noite</span></div>
         <div id="dailyMissions"></div>
       </div>
       <div class="card pad">
-        <div class="card-h"><h3>Missões semanais</h3><span class="tag" style="margin-left:auto">renova domingo</span></div>
+        <div class="card-h"><h3>Missões semanais</h3><span class="tag" style="margin-left:auto" id="renovaSemana">renova domingo</span></div>
         <div id="weeklyMissions"></div>
       </div>
     </section>
@@ -638,7 +680,7 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
     <section class="page" id="page-loja">
       <div class="page-head">
         <div><h2>Loja</h2><p>Troque as moedas que você ganhou completando hábitos.</p></div>
-        <div class="coins" style="margin-left:auto">🪙 <span id="coinShop">240</span> moedas</div>
+        <div class="coins" style="margin-left:auto">🪙 <span id="coinShop">0</span> moedas</div>
       </div>
       <div class="cols c4" id="shopGrid"></div>
     </section>
@@ -649,11 +691,16 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
       <div class="cols c2">
         <div class="card pad">
           <div class="card-h"><h3>Conta</h3></div>
-          <div class="srow"><div class="txt"><strong>Nome</strong><p>Aparece na saudação e nos relatórios.</p></div><input type="text" value="João Sá" style="width:160px"></div>
+          <div class="srow"><div class="txt"><strong>Nome</strong><p>Aparece na saudação e nos relatórios.</p></div><input type="text" id="configNome" style="width:160px"></div>
           <div class="srow"><div class="txt"><strong>Fuso horário</strong><p>Define quando o dia vira.</p></div>
             <select><option>Brasília (GMT-3)</option><option>Fernando de Noronha (GMT-2)</option><option>Manaus (GMT-4)</option></select></div>
           <div class="srow"><div class="txt"><strong>Início da semana</strong><p>Usado no calendário e nos relatórios.</p></div>
             <select><option>Segunda-feira</option><option>Domingo</option></select></div>
+        </div>
+        <div class="card pad">
+          <div class="card-h"><h3>Avatar</h3></div>
+          <p style="color:var(--muted);font-size:12.5px;margin-bottom:14px">Escolha um avatar para o seu perfil. Se você entrou pelo Google, isso substitui sua foto. Avatares raros, épicos e lendários são desbloqueados na Loja.</p>
+          <div id="avatarGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:10px"></div>
         </div>
         <div class="card pad">
           <div class="card-h"><h3>Lembretes</h3></div>
@@ -679,70 +726,309 @@ select,input[type=text],input[type=time]{background:var(--card-2);border:1px sol
   </main>
 </div>
 <div class="toast" id="toast"></div>
-<script>
+
+<div class="modal-overlay" id="habitModalOverlay">
+  <div class="card pad modal" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle">
+    <h3 id="habitModalTitle" style="font-size:17px;margin-bottom:14px">Novo hábito</h3>
+    <form id="habitForm">
+      <div class="field">
+        <label for="habitNome">Nome</label>
+        <input type="text" id="habitNome" required maxlength="60" placeholder="Ex.: Meditar">
+      </div>
+      <div class="field">
+        <label for="habitCategoria">Categoria</label>
+        <select id="habitCategoria">
+          <option>Saúde</option>
+          <option>Estudos</option>
+          <option>Pessoal</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="habitEmoji">Emoji</label>
+          <input type="text" id="habitEmoji" maxlength="4" placeholder="✅" value="✅">
+        </div>
+        <div class="field">
+          <label for="habitXp">XP por dia</label>
+          <input type="number" id="habitXp" min="1" max="100" value="10">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="habitModalCancel">Cancelar</button>
+        <button type="submit" class="btn primary" id="habitModalSubmit">Adicionar hábito</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="goalModalOverlay">
+  <div class="card pad modal" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle">
+    <h3 id="goalModalTitle" style="font-size:17px;margin-bottom:14px">Nova meta</h3>
+    <form id="goalForm">
+      <div class="field">
+        <label for="goalNome">Nome</label>
+        <input type="text" id="goalNome" required maxlength="60" placeholder="Ex.: Ler 12 livros no ano">
+      </div>
+      <div class="field">
+        <label for="goalDesc">Descrição</label>
+        <input type="text" id="goalDesc" maxlength="140" placeholder="Um livro por mês, no seu ritmo.">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="goalAlvo">Alvo</label>
+          <input type="number" id="goalAlvo" min="1" max="100000" value="10">
+        </div>
+        <div class="field">
+          <label for="goalUnidade">Unidade</label>
+          <input type="text" id="goalUnidade" maxlength="20" placeholder="livros, dias, XP…">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="goalEmoji">Emoji</label>
+          <input type="text" id="goalEmoji" maxlength="4" placeholder="🎯" value="🎯">
+        </div>
+        <div class="field">
+          <label for="goalPrazo">Prazo</label>
+          <input type="date" id="goalPrazo">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="goalModalCancel">Cancelar</button>
+        <button type="submit" class="btn primary" id="goalModalSubmit">Adicionar meta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dayModalOverlay">
+  <div class="card pad modal" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
+    <h3 id="dayModalTitle" style="font-size:17px;margin-bottom:4px">Editar dia</h3>
+    <p style="color:var(--muted);font-size:12.5px;margin-bottom:14px">Marque os hábitos que você concluiu nesse dia — vale se você esqueceu de registrar na hora.</p>
+    <div id="dayModalList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn primary" id="dayModalClose">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { supabase } from './supabase-client.js';
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+/* ===================== AUTENTICAÇÃO ===================== */
+const { data: { session } } = await supabase.auth.getSession();
+if(!session){
+  location.href = 'login.html';
+  throw new Error('Sem sessão — redirecionando para login.');
+}
+let currentUser = session.user;
+supabase.auth.onAuthStateChange((event, sess) => {
+  if(event === 'SIGNED_OUT' || !sess) location.href = 'login.html';
+});
+
+let profile = null;
+async function loadProfile(){
+  const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+  profile = data;
+  coins = profile?.coins ?? 0;
+  renderProfile();
+  renderResumo();
+  updateCoins();
+  if(typeof renderAvatarPicker === 'function') renderAvatarPicker();
+  if(typeof renderConquistas === 'function') renderConquistas();
+}
+async function syncCoins(){
+  if(!profile) return;
+  profile.coins = coins;
+  const { error } = await supabase.from('profiles').update({coins}).eq('id', currentUser.id);
+  if(error) toast('Não foi possível sincronizar suas moedas.');
+}
+function renderProfile(){
+  const meta = currentUser.user_metadata || {};
+  const nome = profile?.nome || meta.full_name || meta.name || currentUser.email.split('@')[0];
+  const primeiroNome = nome.split(' ')[0];
+  const avatarEscolhido = profile?.avatar_escolhido && AVATARES.find(a => a.slug === profile.avatar_escolhido);
+  const avatarUrl = !avatarEscolhido && (meta.avatar_url || meta.picture || profile?.avatar_url);
+  const totalXp = profile?.total_xp ?? 0;
+  const nivel = Math.floor(totalXp / 150) + 1;
+
+  const hora = new Date().getHours();
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+  titulos.hoje[0] = `${saudacao}, ${primeiroNome}`;
+  if(location.hash.slice(1) === 'hoje' || !location.hash){ $('#pageTitle').textContent = titulos.hoje[0]; }
+
+  $('#sideName').textContent = nome;
+  $('#sideLevel').textContent = `Nível ${nivel}`;
+  $('#sideAvatar').innerHTML = avatarEscolhido
+    ? `<img src="${avatarEscolhido.img}" alt="${avatarEscolhido.nome}">`
+    : avatarUrl ? `<img src="${avatarUrl}" alt="${nome}">` : nome.slice(0,2).toUpperCase();
+  if($('#configNome') && document.activeElement !== $('#configNome')) $('#configNome').value = nome;
+}
+async function adjustXp(delta){
+  if(!profile || !delta) return;
+  profile.total_xp = Math.max(0, (profile.total_xp||0) + delta);
+  renderProfile();
+  const { error } = await supabase.from('profiles').update({total_xp: profile.total_xp}).eq('id', currentUser.id);
+  if(error) toast('Não foi possível sincronizar seu XP.');
+}
+$('#logout').addEventListener('click', async e => {
+  e.preventDefault();
+  await supabase.auth.signOut();
+  location.href = 'login.html';
+});
+
+/* ===================== SUPABASE: HÁBITOS/METAS ===================== */
+function dateStr(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function hojeStr(){ return dateStr(new Date()); }
+
+function rowToHabit(row){
+  return {id:row.id, nome:row.nome, cat:row.categoria, em:row.emoji, xp:row.xp, createdAt:row.created_at.slice(0,10), streak:0, done:false, melhor:0, taxa:0};
+}
+function rowToGoal(row){
+  return {id:row.id, em:row.emoji, nome:row.nome, desc:row.descricao, at:row.atual, alvo:row.alvo, un:row.unidade, cor:row.cor, prazo:row.prazo ? new Date(row.prazo+'T00:00:00').toLocaleDateString('pt-BR') : '—'};
+}
+
+/* histórico de conclusões */
+let habitLogRows = []; // [{habit_id, data, created_at}]
+let habitLogs = new Map(); // Map<habitId, Set<'YYYY-MM-DD'>> — visão rápida por hábito
+async function loadHabitLogs(){
+  const { data, error } = await supabase.from('habit_logs').select('habit_id, data, created_at');
+  if(error){ toast('Não foi possível carregar o histórico de hábitos.'); return; }
+  habitLogRows = data;
+  habitLogs = new Map();
+  for(const row of data){
+    if(!habitLogs.has(row.habit_id)) habitLogs.set(row.habit_id, new Set());
+    habitLogs.get(row.habit_id).add(row.data);
+  }
+  aplicarEstatisticasHabitos();
+}
+function calcStreakAtual(logsSet){
+  let streak = 0;
+  const cursor = new Date();
+  if(!logsSet.has(dateStr(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while(logsSet.has(dateStr(cursor))){ streak++; cursor.setDate(cursor.getDate() - 1); }
+  return streak;
+}
+function calcMelhorStreak(logsSet){
+  const datas = [...logsSet].sort();
+  let melhor = 0, atual = 0, anterior = null;
+  for(const d of datas){
+    atual = anterior && (new Date(d) - new Date(anterior)) / 86400000 === 1 ? atual + 1 : 1;
+    melhor = Math.max(melhor, atual);
+    anterior = d;
+  }
+  return melhor;
+}
+function calcTaxa(logsSet, createdAt){
+  const inicio = new Date(createdAt + 'T00:00:00');
+  const dias = Math.max(1, Math.floor((new Date() - inicio) / 86400000) + 1);
+  return Math.round(Math.min(logsSet.size, dias) / dias * 100);
+}
+function fraseMotivacional(){
+  if(!habits.length) return 'Comece cadastrando seu primeiro hábito — cada jornada começa com um passo.';
+  const done = habits.filter(h => h.done).length;
+  const pctHoje = Math.round(done / habits.length * 100);
+  const melhorStreak = habits.reduce((m, h) => Math.max(m, h.streak), 0);
+  const taxaMedia = Math.round(habits.reduce((s, h) => s + h.taxa, 0) / habits.length);
+
+  if(pctHoje === 100) return 'Dia completo! Grandes resultados são construídos com pequenas ações diárias.';
+  if(pctHoje === 0 && melhorStreak === 0) return 'Hoje ainda não tem nada marcado — que tal começar agora?';
+  if(pctHoje === 0) return `Não perca sua sequência de ${melhorStreak} dias — marque um hábito hoje.`;
+  if(melhorStreak >= 30) return `Uau, ${melhorStreak} dias seguidos! Sua disciplina já é um hábito.`;
+  if(melhorStreak >= 7) return `${melhorStreak} dias de sequência — a consistência está valendo a pena.`;
+  if(taxaMedia >= 80) return 'Sua taxa de conclusão está excelente. Continue assim!';
+  if(taxaMedia < 40) return 'Toda recaída é uma chance de recomeçar mais forte.';
+  if(pctHoje >= 50) return 'Você já passou da metade do dia — falta pouco para terminar tudo.';
+  return 'Pequenos passos todos os dias levam a grandes resultados.';
+}
+function aplicarEstatisticasHabitos(){
+  const hoje = hojeStr();
+  habits.forEach(h => {
+    const logs = habitLogs.get(h.id) || new Set();
+    h.done = logs.has(hoje);
+    h.streak = calcStreakAtual(logs);
+    h.melhor = calcMelhorStreak(logs);
+    h.taxa = calcTaxa(logs, h.createdAt);
+  });
+  renderHabits(); renderHabitCards(); renderResumo();
+  if(typeof renderCalendar === 'function') renderCalendar();
+  if(typeof renderEstatisticas === 'function') renderEstatisticas();
+  if(typeof renderRelatorios === 'function') renderRelatorios();
+  if(typeof renderMissoes === 'function') renderMissoes();
+}
+
 /* ===================== DADOS ===================== */
-const habits = [
-  {id:1, nome:'Exercício', cat:'Saúde',   em:'🏋️', xp:10, streak:0, done:false, melhor:12, taxa:54},
-  {id:2, nome:'Estudar',   cat:'Estudos', em:'📖', xp:15, streak:5, done:true,  melhor:21, taxa:86},
-  {id:3, nome:'Inglês',    cat:'Estudos', em:'🇺🇸', xp:5,  streak:0, done:false, melhor:9,  taxa:47},
-  {id:4, nome:'Leitura',   cat:'Pessoal', em:'📘', xp:10, streak:0, done:false, melhor:14, taxa:62},
-  {id:5, nome:'Violão',    cat:'Pessoal', em:'🎸', xp:10, streak:0, done:false, melhor:6,  taxa:38},
-];
-const BASE_XP = 100, XP_ANTES = 200;
-let coins = 240;
+let habits = [];
+let coins = 0;
 
-const metas = [
-  {em:'🚩', nome:'Atingir Nível 3', desc:'Acumule 300 XP no total.', at:115, alvo:300, un:'XP', cor:'violet', prazo:'31/12/2026'},
-  {em:'🔥', nome:'30 dias seguidos', desc:'Mantenha a sequência geral por um mês.', at:7, alvo:30, un:'dias', cor:'amber', prazo:'14/10/2026'},
-  {em:'📚', nome:'Ler 12 livros no ano', desc:'Um livro por mês, no seu ritmo.', at:7, alvo:12, un:'livros', cor:'green', prazo:'31/12/2026'},
-  {em:'🏅', nome:'100 treinos', desc:'Some 100 sessões de exercício.', at:34, alvo:100, un:'treinos', cor:'pink', prazo:'30/06/2027'},
-];
+let metas = [];
 
+/* "chave" liga cada conquista a uma condição real, calculada em calcularConquistas() */
 const conquistas = [
-  {em:'🔥', nome:'7 dias de sequência', desc:'Manteve o foco por 7 dias seguidos.', on:true,  data:'10/09/2026'},
-  {em:'🌱', nome:'Primeiro passo',      desc:'Concluiu o primeiro hábito do app.', on:true,  data:'24/08/2026'},
-  {em:'⭐', nome:'200 XP',              desc:'Acumulou 200 pontos de experiência.', on:true, data:'08/09/2026'},
-  {em:'🌙', nome:'Madrugador',          desc:'Conclua um hábito antes das 7h.',    on:false, data:''},
-  {em:'💯', nome:'Dia perfeito',        desc:'Conclua todos os hábitos em um dia.', on:false, data:''},
-  {em:'🗓️', nome:'30 dias seguidos',    desc:'Mantenha a sequência por um mês.',   on:false, data:''},
-  {em:'🏔️', nome:'Nível 5',             desc:'Alcance o nível 5.',                 on:false, data:''},
-  {em:'🎯', nome:'Meta cumprida',       desc:'Conclua uma meta até o prazo.',      on:false, data:''},
-  {em:'👑', nome:'1000 XP',             desc:'Acumule 1000 pontos no total.',      on:false, data:''},
+  {em:'🌱', nome:'Primeiro passo',       desc:'Conclua o primeiro hábito do app.',       chave:'primeiroPasso'},
+  {em:'🌙', nome:'Madrugador',           desc:'Conclua um hábito antes das 7h.',         chave:'madrugador'},
+  {em:'💯', nome:'Dia perfeito',         desc:'Conclua todos os hábitos em um dia.',     chave:'diaPerfeito'},
+  {em:'🔥', nome:'7 dias de sequência',  desc:'Mantenha o foco por 7 dias seguidos.',    chave:'streak7'},
+  {em:'🗓️', nome:'30 dias seguidos',     desc:'Mantenha a sequência por um mês.',        chave:'streak30'},
+  {em:'🏆', nome:'100 dias seguidos',    desc:'Mantenha a sequência por 100 dias.',      chave:'streak100'},
+  {em:'⭐', nome:'200 XP',               desc:'Acumule 200 pontos de experiência.',      chave:'xp200'},
+  {em:'👑', nome:'1000 XP',              desc:'Acumule 1000 pontos no total.',           chave:'xp1000'},
+  {em:'💎', nome:'5000 XP',              desc:'Acumule 5000 pontos no total.',           chave:'xp5000'},
+  {em:'🏔️', nome:'Nível 5',              desc:'Alcance o nível 5.',                      chave:'nivel5'},
+  {em:'🚀', nome:'Nível 10',             desc:'Alcance o nível 10.',                     chave:'nivel10'},
+  {em:'🧩', nome:'5 hábitos ativos',     desc:'Tenha 5 hábitos cadastrados ao mesmo tempo.', chave:'cincoHabitos'},
+  {em:'📈', nome:'50 hábitos concluídos', desc:'Conclua hábitos 50 vezes no total.',     chave:'cinquentaConclusoes'},
+  {em:'🎯', nome:'Meta cumprida',        desc:'Conclua uma meta até o prazo.',           chave:'metaCumprida'},
+  {em:'🎯', nome:'3 metas cumpridas',    desc:'Conclua três metas até o prazo.',         chave:'tresMetas'},
+  {em:'🛍️', nome:'Primeira compra',      desc:'Troque moedas por algo na loja.',         chave:'primeiraCompra'},
 ];
 
-const missoesDia = [
-  {em:'✅', nome:'Conclua 3 hábitos hoje', desc:'', at:1, alvo:3, xp:20, moedas:15},
-  {em:'📖', nome:'Estude por 30 minutos',  desc:'Vale para Estudar ou Inglês.', at:1, alvo:1, xp:15, moedas:10},
-  {em:'🌅', nome:'Marque um hábito antes das 9h', desc:'', at:0, alvo:1, xp:10, moedas:5},
+/* Missões genéricas: não dependem de nenhum hábito específico, funcionam com qualquer hábito cadastrado. */
+const MISSOES_DIA = [
+  {chave:'d_um_habito',   em:'✅', nome:'Conclua 1 hábito hoje',        desc:'Vale qualquer hábito.',            alvo:1,  xp:10, moedas:8,  calcAt:() => habits.filter(h => h.done).length},
+  {chave:'d_tres_habitos',em:'🔥', nome:'Conclua 3 hábitos hoje',        desc:'Combine quantos quiser.',          alvo:3,  xp:20, moedas:15, calcAt:() => habits.filter(h => h.done).length},
+  {chave:'d_cedo',        em:'🌅', nome:'Registre um hábito antes das 9h', desc:'Comece o dia cedo.',              alvo:1,  xp:10, moedas:5,  calcAt:() => habitLogRows.some(r => r.data === hojeStr() && new Date(r.created_at).getHours() < 9) ? 1 : 0},
 ];
-const missoesSemana = [
-  {em:'🔥', nome:'7 dias sem falhar',      desc:'Marque ao menos um hábito por dia.', at:7, alvo:7, xp:60, moedas:50},
-  {em:'🏋️', nome:'5 treinos na semana',    desc:'', at:2, alvo:5, xp:50, moedas:40},
-  {em:'🎸', nome:'Pratique violão 3 vezes', desc:'', at:0, alvo:3, xp:35, moedas:25},
+const MISSOES_SEMANA = [
+  {chave:'w_cinco_dias',  em:'🗓️', nome:'Conclua hábitos em 5 dias esta semana', desc:'Não precisa ser o mesmo hábito.', alvo:5,   xp:50, moedas:40, calcAt:() => new Set(habitLogRows.filter(r => r.data >= dateStr(segundaDe(new Date())) && r.data <= hojeStr()).map(r => r.data)).size},
+  {chave:'w_cem_xp',      em:'⭐', nome:'Ganhe 100 XP esta semana',      desc:'Some o XP de todos os hábitos.',   alvo:100, xp:40, moedas:35, calcAt:() => statsSemana(segundaDe(new Date())).xp},
+  {chave:'w_dez_habitos', em:'📈', nome:'Conclua 10 hábitos esta semana', desc:'Some todas as conclusões da semana.', alvo:10, xp:60, moedas:50, calcAt:() => statsSemana(segundaDe(new Date())).concluidos},
 ];
+
+const AVATARES = [
+  {slug:'urso',       img:'avatars/urso.svg',      nome:'Urso',       raridade:'comum'},
+  {slug:'raposa',     img:'avatars/raposa.svg',    nome:'Raposa',     raridade:'comum'},
+  {slug:'coruja',     img:'avatars/coruja.svg',    nome:'Coruja',     raridade:'comum'},
+  {slug:'gato',       img:'avatars/gato.svg',      nome:'Gato',       raridade:'comum'},
+  {slug:'lobo',       img:'avatars/lobo.svg',      nome:'Lobo',       raridade:'raro'},
+  {slug:'tigre',      img:'avatars/tigre.svg',     nome:'Tigre',      raridade:'raro'},
+  {slug:'dragao',     img:'avatars/dragao.svg',    nome:'Dragão',     raridade:'épico'},
+  {slug:'fenix',      img:'avatars/fenix.svg',     nome:'Fênix',      raridade:'épico'},
+  {slug:'unicornio',  img:'avatars/unicornio.svg', nome:'Unicórnio',  raridade:'lendário'},
+  {slug:'coroa',      img:'avatars/coroa.svg',     nome:'Realeza',    raridade:'lendário'},
+];
+const RARIDADE_COR = {comum:'var(--muted)', raro:'var(--blue)', 'épico':'var(--violet)', 'lendário':'var(--amber)'};
 
 const loja = [
   {em:'🧊', nome:'Congelar sequência', desc:'Protege sua streak por um dia perdido.', preco:120, bg:'linear-gradient(135deg,#1e3a8a,#3b82f6)'},
   {em:'⚡', nome:'XP em dobro (24h)',  desc:'Todos os hábitos valem o dobro por um dia.', preco:200, bg:'linear-gradient(135deg,#7c3aed,#c084fc)'},
   {em:'🎨', nome:'Tema Aurora',        desc:'Uma paleta verde-azulada para o painel.', preco:350, bg:'linear-gradient(135deg,#065f46,#34d399)'},
   {em:'🌇', nome:'Tema Pôr do sol',    desc:'O visual laranja que você já conhece.', preco:350, bg:'linear-gradient(135deg,#9a3412,#f59e0b)'},
-  {em:'🐉', nome:'Avatar Dragão',      desc:'Troque a foto do seu perfil.', preco:180, bg:'linear-gradient(135deg,#4c1d95,#a78bfa)'},
-  {em:'🏆', nome:'Moldura dourada',    desc:'Destaque no seu avatar e nas conquistas.', preco:260, bg:'linear-gradient(135deg,#78350f,#fbbf24)'},
+  {em:'🐺', nome:'Avatar Lobo',        desc:'Avatar raro para o seu perfil.', preco:150, bg:'linear-gradient(135deg,#374151,#9ca3af)', avatarSlug:'lobo'},
+  {em:'🐯', nome:'Avatar Tigre',       desc:'Avatar raro para o seu perfil.', preco:150, bg:'linear-gradient(135deg,#7c2d12,#f97316)', avatarSlug:'tigre'},
+  {em:'🐉', nome:'Avatar Dragão',      desc:'Avatar épico para o seu perfil.', preco:300, bg:'linear-gradient(135deg,#4c1d95,#a78bfa)', avatarSlug:'dragao'},
+  {em:'🔥', nome:'Avatar Fênix',       desc:'Avatar épico para o seu perfil.', preco:300, bg:'linear-gradient(135deg,#7c2d12,#fb923c)', avatarSlug:'fenix'},
+  {em:'🦄', nome:'Avatar Unicórnio',   desc:'Avatar lendário — o mais raro da loja.', preco:500, bg:'linear-gradient(135deg,#831843,#f472b6)', avatarSlug:'unicornio'},
+  {em:'👑', nome:'Avatar Realeza',     desc:'Avatar lendário — o mais raro da loja.', preco:500, bg:'linear-gradient(135deg,#78350f,#fbbf24)', avatarSlug:'coroa'},
   {em:'📊', nome:'Relatórios avançados', desc:'Gráficos por hora e comparativos anuais.', preco:420, bg:'linear-gradient(135deg,#0c4a6e,#38bdf8)'},
   {em:'🎯', nome:'Slot de meta extra', desc:'Acompanhe mais uma meta ao mesmo tempo.', preco:150, bg:'linear-gradient(135deg,#831843,#f472b6)'},
 ];
 
-const relatorios = [
-  {sem:'08 – 14/09', ok:24, miss:11, xp:215, taxa:69},
-  {sem:'01 – 07/09', ok:27, miss:8,  xp:245, taxa:77},
-  {sem:'25 – 31/08', ok:19, miss:16, xp:170, taxa:54},
-  {sem:'18 – 24/08', ok:22, miss:13, xp:195, taxa:63},
-  {sem:'11 – 17/08', em:'', ok:15, miss:20, xp:140, taxa:43},
-];
 
 /* ===================== UTIL ===================== */
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
 let toastT;
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('on');
@@ -786,7 +1072,6 @@ document.addEventListener('click', e => {
   location.hash = a.dataset.page;
   go(a.dataset.page);
 });
-$('#logout').addEventListener('click', e => { e.preventDefault(); toast('Você saiu da conta (demonstração).'); });
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
 
 /* ===================== HOJE ===================== */
@@ -806,8 +1091,9 @@ function renderHabits(){
 function renderResumo(){
   const done = habits.filter(h => h.done);
   const todayXp = done.reduce((s,h) => s + h.xp, 0);
-  const pct = Math.round(done.length / habits.length * 100);
-  const lvlXp = BASE_XP + todayXp, total = XP_ANTES + todayXp;
+  const pct = habits.length ? Math.round(done.length / habits.length * 100) : 0;
+  const total = profile?.total_xp ?? 0, lvlXp = total % 150;
+  const nivel = Math.floor(total / 150) + 1;
 
   $('#ring').style.strokeDashoffset = C - C * pct / 100;
   $('#pct').textContent = pct + '%';
@@ -816,27 +1102,29 @@ function renderResumo(){
   $('#cSummary').textContent = `${done.length} de ${habits.length} concluídos`;
   $('#todayXp').textContent = todayXp;
   $('#todayBar').style.width = Math.min(100, todayXp/50*100) + '%';
+  $('#progLevel').textContent = `Nível ${nivel}`;
   $('#lvlXp').textContent = lvlXp;
   $('#lvlBar').style.width = Math.min(100, lvlXp/150*100) + '%';
   $('#totalXp').textContent = total;
   $('#stTotal').textContent = total;
-  $('#goalXp').textContent = lvlXp;
-  $('#goalBar').style.width = Math.min(100, lvlXp/300*100) + '%';
   $('#sideBar').style.width = Math.min(100, lvlXp/150*100) + '%';
+  $('#streakGeral').textContent = habits.reduce((m,h) => Math.max(m, h.streak), 0);
 
   const t = $('#hintTitle'), p = $('#hintText');
-  if(done.length === habits.length){ t.textContent='Dia completo!'; p.textContent='Todos os hábitos de hoje estão concluídos.'; }
+  if(habits.length && done.length === habits.length){ t.textContent='Dia completo!'; p.textContent='Todos os hábitos de hoje estão concluídos.'; }
   else if(!todayXp){ t.textContent='Comece por um hábito'; p.textContent='Marque o primeiro e ganhe XP.'; }
   else { t.textContent='Você está indo bem!'; p.textContent='Complete mais hábitos e ganhe XP.'; }
+
+  renderProxMeta();
+  if(typeof renderConquistas === 'function') renderConquistas();
+  if(typeof renderNotifications === 'function') renderNotifications();
+  const motiv = $('#motivFrase'); if(motiv) motiv.textContent = fraseMotivacional();
 }
 $('#habitList').addEventListener('click', e => {
   const btn = e.target.closest('.check'); if(!btn) return;
-  const id = +btn.closest('.habit').dataset.id;
+  const id = btn.closest('.habit').dataset.id;
   const h = habits.find(x => x.id === id);
-  h.done = !h.done;
-  btn.setAttribute('aria-pressed', h.done);
-  renderResumo(); renderHabitCards();
-  if(h.done) toast(`${h.nome} concluído · +${h.xp} XP`);
+  setHabitDone(h.id, !h.done);
 });
 $('#continueBtn').addEventListener('click', () => {
   const next = habits.find(h => !h.done);
@@ -868,93 +1156,490 @@ function renderHabitCards(){
 }
 $('#habitCards').addEventListener('click', e => {
   const b = e.target.closest('[data-toggle]'); if(!b) return;
-  const h = habits.find(x => x.id === +b.dataset.toggle);
-  h.done = !h.done;
-  renderHabits(); renderResumo(); renderHabitCards();
-  toast(h.done ? `${h.nome} concluído · +${h.xp} XP` : `${h.nome} desmarcado`);
+  const h = habits.find(x => x.id === b.dataset.toggle);
+  setHabitDone(h.id, !h.done);
 });
-$('#newHabit').addEventListener('click', () => toast('Formulário de novo hábito abriria aqui.'));
-$('#resetDay').addEventListener('click', () => {
-  habits.forEach(h => h.done = false);
-  renderHabits(); renderResumo(); renderHabitCards();
+
+/* ---- novo hábito (form conectado ao Supabase) ---- */
+function openHabitModal(){
+  $('#habitForm').reset();
+  $('#habitEmoji').value = '✅';
+  $('#habitXp').value = 10;
+  $('#habitModalOverlay').classList.add('on');
+  $('#habitNome').focus();
+}
+function closeHabitModal(){
+  $('#habitModalOverlay').classList.remove('on');
+}
+$('#newHabit').addEventListener('click', openHabitModal);
+$('#habitModalCancel').addEventListener('click', closeHabitModal);
+$('#habitModalOverlay').addEventListener('click', e => { if(e.target === $('#habitModalOverlay')) closeHabitModal(); });
+$('#habitForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome = $('#habitNome').value.trim();
+  if(!nome) return;
+  const submitBtn = $('#habitModalSubmit');
+  submitBtn.disabled = true; submitBtn.textContent = 'Adicionando…';
+  const { data, error } = await supabase.from('habits').insert({
+    nome,
+    categoria: $('#habitCategoria').value,
+    emoji: $('#habitEmoji').value.trim() || '✅',
+    xp: Math.max(1, +$('#habitXp').value || 10),
+  }).select().single();
+  submitBtn.disabled = false; submitBtn.textContent = 'Adicionar hábito';
+  if(error){ toast('Não foi possível salvar o hábito.'); return; }
+  habits.push(rowToHabit(data));
+  aplicarEstatisticasHabitos();
+  closeHabitModal();
+  toast(`${nome} adicionado aos seus hábitos.`);
+});
+
+async function marcarHabitoNoDia(habitId, data, marcar){
+  if(marcar){
+    const { data: row, error } = await supabase.from('habit_logs').insert({habit_id: habitId, data}).select().single();
+    if(error){ toast('Não foi possível salvar. Verifique sua conexão.'); return false; }
+    habitLogRows.push(row);
+  } else {
+    const { error } = await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('data', data);
+    if(error){ toast('Não foi possível salvar. Verifique sua conexão.'); return false; }
+    habitLogRows = habitLogRows.filter(r => !(r.habit_id === habitId && r.data === data));
+  }
+  if(!habitLogs.has(habitId)) habitLogs.set(habitId, new Set());
+  const set = habitLogs.get(habitId);
+  marcar ? set.add(data) : set.delete(data);
+  return true;
+}
+
+async function setHabitDone(id, done){
+  const h = habits.find(x => x.id === id);
+  if(!h) return;
+  const ok = await marcarHabitoNoDia(id, hojeStr(), done);
+  if(!ok) return;
+  aplicarEstatisticasHabitos();
+  if(done) toast(`${h.nome} concluído · +${h.xp} XP`);
+  adjustXp(done ? h.xp : -h.xp);
+}
+
+$('#resetDay').addEventListener('click', async () => {
+  const hoje = hojeStr();
+  const xpDoHoje = habits.filter(h => h.done).reduce((s,h) => s + h.xp, 0);
+  const { error } = await supabase.from('habit_logs').delete().eq('data', hoje);
+  if(error){ toast('Não foi possível reiniciar o dia.'); return; }
+  habitLogs.forEach(set => set.delete(hoje));
+  habitLogRows = habitLogRows.filter(r => r.data !== hoje);
+  aplicarEstatisticasHabitos();
   toast('Dia reiniciado.');
+  if(xpDoHoje) adjustXp(-xpDoHoje);
 });
 
 /* ===================== METAS ===================== */
-$('#goalCards').innerHTML = metas.map(m => {
-  const pc = Math.round(m.at/m.alvo*100);
-  return `<div class="card pad">
-    <div class="goal" style="margin:0">
-      <span class="em" style="font-size:28px">${m.em}</span>
-      <div class="txt">
-        <strong style="font-size:16px">${m.nome}</strong>
-        <span class="nums">${m.at} / ${m.alvo} ${m.un}</span>
-        <p style="color:var(--muted);font-size:12.5px;margin-top:5px;clear:both">${m.desc}</p>
-      </div>
-    </div>
-    <div class="bar ${m.cor}" style="margin:16px 0 10px"><i style="width:${pc}%"></i></div>
-    <div style="display:flex;color:var(--muted);font-size:12.5px"><span>${pc}% concluído</span><span style="margin-left:auto">Prazo: ${m.prazo}</span></div>
-  </div>`;
-}).join('');
+function renderProxMeta(){
+  const wrap = $('#proxMetaCard');
+  if(!wrap) return;
+  const meta = metas[0];
+  if(meta){
+    const pc = Math.min(100, Math.round(meta.at / meta.alvo * 100));
+    wrap.innerHTML = `<span class="em">${meta.em}</span>
+      <div class="txt"><strong>${meta.nome}</strong><span class="nums">${meta.at} / ${meta.alvo} ${meta.un}</span>
+        <div class="bar ${meta.cor}" style="margin:12px 0 0"><i style="width:${pc}%"></i></div>
+      </div>`;
+  } else {
+    const total = profile?.total_xp ?? 0;
+    const nivel = Math.floor(total / 150) + 1;
+    const xpNoNivel = total % 150;
+    wrap.innerHTML = `<span class="em">🚩</span>
+      <div class="txt"><strong>Alcançar o nível ${nivel + 1}</strong><span class="nums">${xpNoNivel} / 150 XP</span>
+        <div class="bar violet" style="margin:12px 0 0"><i style="width:${Math.round(xpNoNivel/150*100)}%"></i></div>
+      </div>`;
+  }
+}
+function renderGoals(){
+  $('#goalCards').innerHTML = !metas.length
+    ? `<p style="color:var(--muted);font-size:13px">Você ainda não tem metas. Crie a primeira com "+ Nova meta".</p>`
+    : metas.map(m => {
+      const pc = Math.min(100, Math.round(m.at/m.alvo*100));
+      return `<div class="card pad">
+        <div class="goal" style="margin:0">
+          <span class="em" style="font-size:28px">${m.em}</span>
+          <div class="txt">
+            <strong style="font-size:16px">${m.nome}</strong>
+            <span class="nums">${m.at} / ${m.alvo} ${m.un}</span>
+            <p style="color:var(--muted);font-size:12.5px;margin-top:5px;clear:both">${m.desc}</p>
+          </div>
+        </div>
+        <div class="bar ${m.cor}" style="margin:16px 0 10px"><i style="width:${pc}%"></i></div>
+        <div style="display:flex;color:var(--muted);font-size:12.5px"><span>${pc}% concluído</span><span style="margin-left:auto">Prazo: ${m.prazo}</span></div>
+      </div>`;
+    }).join('');
+  renderProxMeta();
+  if(typeof renderConquistas === 'function') renderConquistas();
+  if(typeof renderNotifications === 'function') renderNotifications();
+}
+async function loadGoals(){
+  const { data, error } = await supabase.from('goals').select('*').order('created_at');
+  if(error){ toast('Não foi possível carregar as metas.'); return; }
+  metas = data.map(rowToGoal);
+  renderGoals();
+}
+
+function openGoalModal(){
+  $('#goalForm').reset();
+  $('#goalEmoji').value = '🎯';
+  $('#goalAlvo').value = 10;
+  $('#goalModalOverlay').classList.add('on');
+  $('#goalNome').focus();
+}
+function closeGoalModal(){ $('#goalModalOverlay').classList.remove('on'); }
+$('#newGoal').addEventListener('click', openGoalModal);
+$('#goalModalCancel').addEventListener('click', closeGoalModal);
+$('#goalModalOverlay').addEventListener('click', e => { if(e.target === $('#goalModalOverlay')) closeGoalModal(); });
+$('#goalForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome = $('#goalNome').value.trim();
+  if(!nome) return;
+  const cores = ['violet','amber','green','pink','blue'];
+  const submitBtn = $('#goalModalSubmit');
+  submitBtn.disabled = true; submitBtn.textContent = 'Adicionando…';
+  const { data, error } = await supabase.from('goals').insert({
+    nome,
+    descricao: $('#goalDesc').value.trim(),
+    alvo: Math.max(1, +$('#goalAlvo').value || 1),
+    unidade: $('#goalUnidade').value.trim() || 'un.',
+    emoji: $('#goalEmoji').value.trim() || '🎯',
+    prazo: $('#goalPrazo').value || null,
+    cor: cores[metas.length % cores.length],
+  }).select().single();
+  submitBtn.disabled = false; submitBtn.textContent = 'Adicionar meta';
+  if(error){ toast('Não foi possível salvar a meta.'); return; }
+  metas.push(rowToGoal(data));
+  renderGoals();
+  closeGoalModal();
+  toast(`${nome} adicionada às suas metas.`);
+});
+
+/* ===================== NOTIFICAÇÕES ===================== */
+/* Notificações são geradas a partir do estado real do usuário, não de dados fixos. */
+function gerarNotificacoes(){
+  const hojeFmt = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+  const lista = [];
+  if(!habits.length){
+    lista.push({em:'🌱', titulo:'Crie seu primeiro hábito', desc:'Comece agora e acompanhe seu progresso todos os dias.', data:hojeFmt});
+    return lista;
+  }
+  const feitosHoje = habits.filter(h => h.done).length;
+  const melhorStreak = habits.reduce((m, h) => Math.max(m, h.streak), 0);
+  if(feitosHoje === 0 && melhorStreak > 0){
+    lista.push({em:'🔥', titulo:'Sua sequência está em risco', desc:`Você tem ${melhorStreak} dia${melhorStreak>1?'s':''} seguidos — não perca hoje.`, data:hojeFmt});
+  } else if(feitosHoje === 0){
+    lista.push({em:'✅', titulo:'Nenhum hábito concluído hoje', desc:'Marque pelo menos um para começar bem o dia.', data:hojeFmt});
+  }
+  const antesDas7 = habitLogRows.some(r => new Date(r.created_at).getHours() < 7);
+  if(!antesDas7){
+    lista.push({em:'🌅', titulo:'Conquista disponível: Madrugador', desc:'Conclua um hábito antes das 7h para desbloquear.', data:hojeFmt});
+  }
+  const metaEmAndamento = metas.find(m => m.at < m.alvo);
+  if(metaEmAndamento){
+    lista.push({em:'🎯', titulo:`Meta "${metaEmAndamento.nome}"`, desc:`Faltam ${metaEmAndamento.alvo - metaEmAndamento.at} ${metaEmAndamento.un} para concluir.`, data:hojeFmt});
+  }
+  if(!lista.length){
+    lista.push({em:'🎉', titulo:'Tudo em dia!', desc:'Você concluiu tudo o que tinha para hoje.', data:hojeFmt});
+  }
+  return lista.slice(0, 3);
+}
+function renderNotifications(){
+  const notificacoes = gerarNotificacoes();
+  $('#notifBadge').textContent = notificacoes.length;
+  $('#notifBadge').style.display = notificacoes.length ? '' : 'none';
+  $('#notifList').innerHTML = !notificacoes.length
+    ? `<div class="notif-empty">Nenhuma notificação nova.</div>`
+    : notificacoes.map((n,i) => `
+      <div class="notif-item">
+        <div class="em">${n.em}</div>
+        <div class="txt">
+          <strong>${n.titulo}</strong>
+          ${n.desc}
+          <button class="notif-date" data-goto-cal="${i}">${n.data}</button>
+        </div>
+      </div>`).join('');
+}
+renderNotifications();
+$('#notifBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  const panel = $('#notifPanel');
+  const open = !panel.classList.contains('on');
+  panel.classList.toggle('on', open);
+  $('#notifBtn').setAttribute('aria-expanded', open);
+});
+$('#notifPanel').addEventListener('click', e => e.stopPropagation());
+document.addEventListener('click', () => {
+  $('#notifPanel').classList.remove('on');
+  $('#notifBtn').setAttribute('aria-expanded', 'false');
+});
+$('#notifList').addEventListener('click', e => {
+  const b = e.target.closest('[data-goto-cal]'); if(!b) return;
+  $('#notifPanel').classList.remove('on');
+  location.hash = 'calendario';
+  go('calendario');
+});
 
 /* ===================== CALENDÁRIO ===================== */
-(function(){
-  const dias = 30, inicio = 1; // 1/09/2026 = terça → offset 1 (semana começa na segunda)
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let calMonth = new Date(); calMonth.setDate(1);
+
+function habitosAtivosEm(dataStr){
+  return habits.filter(h => h.createdAt <= dataStr);
+}
+function renderCalendar(){
+  const ano = calMonth.getFullYear(), mes = calMonth.getMonth();
+  $('#calTitle').textContent = `${MESES[mes]} de ${ano}`;
+
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+  const offset = (new Date(ano, mes, 1).getDay() + 6) % 7; // semana começando na segunda
+  const hoje = hojeStr();
+
   let html = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(d => `<div class="hd">${d}</div>`).join('');
-  for(let i=0;i<inicio;i++) html += '<div class="cell empty"></div>';
-  for(let d=1;d<=dias;d++){
-    const passado = d <= 14;
-    const feitos = passado ? [3,5,2,4,5,5,1,3,4,5,2,5,4,1][d % 14] ?? 3 : 0;
-    const pips = passado ? Array.from({length:5},(_,i)=>`<i class="pip ${i<feitos?'':'miss'}"></i>`).join('') : '';
-    html += `<div class="cell ${d===14?'today':''} ${feitos===5?'full':''}"><b>${d}</b><div class="pips">${pips}</div></div>`;
+  for(let i = 0; i < offset; i++) html += '<div class="cell empty"></div>';
+
+  let concluidosMes = 0, diasPerfeitos = 0, diasComHabito = 0, taxaSoma = 0;
+  for(let d = 1; d <= diasNoMes; d++){
+    const dataStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ativos = habitosAtivosEm(dataStr);
+    const feitos = ativos.filter(h => habitLogs.get(h.id)?.has(dataStr)).length;
+    const total = ativos.length;
+    concluidosMes += feitos;
+    if(total > 0){
+      diasComHabito++;
+      taxaSoma += feitos / total;
+      if(feitos === total) diasPerfeitos++;
+    }
+    const pipsN = Math.min(total, 6);
+    const pips = Array.from({length: pipsN}, (_, i) => `<i class="pip ${i < feitos ? '' : 'miss'}"></i>`).join('');
+    const futuro = dataStr > hoje;
+    html += `<div class="cell ${dataStr === hoje ? 'today' : ''} ${total > 0 && feitos === total ? 'full' : ''} ${futuro ? 'futuro' : ''}" data-data="${dataStr}"><b>${d}</b><div class="pips">${pips}</div></div>`;
   }
   $('#calGrid').innerHTML = html;
-})();
 
-/* ===================== ESTATÍSTICAS ===================== */
-(function(){
-  const dados = [{d:'Seg',v:35},{d:'Ter',v:45},{d:'Qua',v:25},{d:'Qui',v:50},{d:'Sex',v:40},{d:'Sáb',v:20},{d:'Dom',v:15}];
-  const max = 50;
-  $('#weekChart').innerHTML = dados.map(x => `
+  $('#calResumoConcluidos').textContent = concluidosMes;
+  $('#calResumoStreak').textContent = habits.reduce((m, h) => Math.max(m, h.streak), 0);
+  $('#calResumoTaxa').textContent = diasComHabito ? Math.round(taxaSoma / diasComHabito * 100) + '%' : '—';
+  $('#calResumoPerfeitos').textContent = diasPerfeitos;
+}
+$('#calPrev').addEventListener('click', () => { calMonth.setMonth(calMonth.getMonth() - 1); renderCalendar(); });
+$('#calNext').addEventListener('click', () => { calMonth.setMonth(calMonth.getMonth() + 1); renderCalendar(); });
+$('#calGrid').addEventListener('click', e => {
+  const cell = e.target.closest('.cell');
+  if(!cell || cell.classList.contains('empty')) return;
+  if(cell.classList.contains('futuro')){ toast('Não é possível editar um dia no futuro.'); return; }
+  openDayModal(cell.dataset.data);
+});
+
+let diaSelecionado = null;
+function renderDayModalList(){
+  $('#dayModalList').innerHTML = !habits.length
+    ? `<p style="color:var(--muted);font-size:13px">Você ainda não tem hábitos cadastrados.</p>`
+    : habits.map(h => {
+      const feito = habitLogs.get(h.id)?.has(diaSelecionado);
+      return `<label style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:${feito ? 'rgba(124,92,245,.14)' : 'transparent'}">
+        <input type="checkbox" data-day-habit="${h.id}" ${feito ? 'checked' : ''} style="width:18px;height:18px;accent-color:#7c5cf5">
+        <span style="font-size:18px">${h.em}</span>
+        <span style="flex:1">${h.nome}</span>
+        <span style="color:var(--muted);font-size:12.5px">+${h.xp} XP</span>
+      </label>`;
+    }).join('');
+}
+function openDayModal(dataStr){
+  diaSelecionado = dataStr;
+  const [ano, mes, dia] = dataStr.split('-');
+  $('#dayModalTitle').textContent = `Editar ${dia}/${mes}/${ano}`;
+  renderDayModalList();
+  $('#dayModalOverlay').classList.add('on');
+}
+$('#dayModalClose').addEventListener('click', () => $('#dayModalOverlay').classList.remove('on'));
+$('#dayModalOverlay').addEventListener('click', e => { if(e.target === $('#dayModalOverlay')) $('#dayModalOverlay').classList.remove('on'); });
+$('#dayModalList').addEventListener('change', async e => {
+  const cb = e.target.closest('[data-day-habit]'); if(!cb) return;
+  const h = habits.find(x => x.id === cb.dataset.dayHabit);
+  const marcar = cb.checked;
+  const ok = await marcarHabitoNoDia(h.id, diaSelecionado, marcar);
+  if(!ok){ cb.checked = !marcar; return; }
+  aplicarEstatisticasHabitos();
+  renderDayModalList();
+  adjustXp(marcar ? h.xp : -h.xp);
+  const [ano, mes, dia] = diaSelecionado.split('-');
+  toast(marcar ? `${h.nome} marcado em ${dia}/${mes}/${ano}.` : `${h.nome} desmarcado em ${dia}/${mes}/${ano}.`);
+});
+renderCalendar();
+
+/* ===================== ESTATÍSTICAS / RELATÓRIOS (dados reais) ===================== */
+const DIAS_SEMANA = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const CORES_CATEGORIA = {Saúde:'green', Estudos:'violet', Pessoal:'pink'};
+
+function segundaDe(data){
+  const d = new Date(data);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+function statsSemana(segunda){
+  const hoje = hojeStr();
+  let concluidos = 0, possiveis = 0, xp = 0;
+  for(let i = 0; i < 7; i++){
+    const d = new Date(segunda); d.setDate(segunda.getDate() + i);
+    const ds = dateStr(d);
+    if(ds > hoje) continue;
+    const ativos = habitosAtivosEm(ds);
+    possiveis += ativos.length;
+    ativos.forEach(h => { if(habitLogs.get(h.id)?.has(ds)){ concluidos++; xp += h.xp; } });
+  }
+  return {concluidos, perdidos: Math.max(0, possiveis - concluidos), possiveis, xp, taxa: possiveis ? Math.round(concluidos / possiveis * 100) : 0};
+}
+
+function renderEstatisticas(){
+  const segundaAtual = segundaDe(new Date());
+  const semanaXp = DIAS_SEMANA.map((d, i) => {
+    const dt = new Date(segundaAtual); dt.setDate(segundaAtual.getDate() + i);
+    const ds = dateStr(dt);
+    const xp = habits.reduce((s, h) => s + (habitLogs.get(h.id)?.has(ds) ? h.xp : 0), 0);
+    return {d, v: xp};
+  });
+  const max = Math.max(10, ...semanaXp.map(x => x.v));
+  $('#weekChart').innerHTML = semanaXp.map(x => `
     <div class="col"><span class="vl">${x.v}</span>
       <div class="bar-v" style="height:${x.v/max*100}%"></div>
       <span class="lb">${x.d}</span></div>`).join('');
 
-  const cats = [{n:'Estudos',v:78,c:'violet'},{n:'Pessoal',v:52,c:'pink'},{n:'Saúde',v:41,c:'green'}];
-  $('#catList').innerHTML = cats.map(c => `
-    <div class="catrow"><span class="nm">${c.n}</span>
-      <div class="bar ${c.c}" style="height:9px"><i style="width:${c.v}%"></i></div>
-      <span class="pc">${c.v}%</span></div>`).join('');
+  const porCategoria = {};
+  habits.forEach(h => {
+    if(!porCategoria[h.cat]) porCategoria[h.cat] = {feitos:0, dias:0};
+    const dias = Math.max(1, Math.floor((new Date() - new Date(h.createdAt+'T00:00:00')) / 86400000) + 1);
+    porCategoria[h.cat].feitos += (habitLogs.get(h.id)?.size || 0);
+    porCategoria[h.cat].dias += dias;
+  });
+  const cats = Object.entries(porCategoria).map(([n, v]) => ({n, v: Math.round(v.feitos / v.dias * 100), c: CORES_CATEGORIA[n] || 'blue'}));
+  $('#catList').innerHTML = !cats.length
+    ? `<p style="color:var(--muted);font-size:13px">Cadastre hábitos para ver esse gráfico.</p>`
+    : cats.map(c => `
+      <div class="catrow"><span class="nm">${c.n}</span>
+        <div class="bar ${c.c}" style="height:9px"><i style="width:${c.v}%"></i></div>
+        <span class="pc">${c.v}%</span></div>`).join('');
 
-  $('#topHabits').innerHTML = [...habits].sort((a,b)=>b.taxa-a.taxa).map(h => `
-    <div class="catrow"><span style="font-size:19px">${h.em}</span>
-      <span class="nm">${h.nome}</span>
-      <div class="bar violet" style="height:9px"><i style="width:${h.taxa}%"></i></div>
-      <span class="pc">${h.taxa}%</span></div>`).join('');
+  $('#topHabits').innerHTML = !habits.length
+    ? `<p style="color:var(--muted);font-size:13px">Nenhum hábito cadastrado ainda.</p>`
+    : [...habits].sort((a, b) => b.taxa - a.taxa).map(h => `
+      <div class="catrow"><span style="font-size:19px">${h.em}</span>
+        <span class="nm">${h.nome}</span>
+        <div class="bar violet" style="height:9px"><i style="width:${h.taxa}%"></i></div>
+        <span class="pc">${h.taxa}%</span></div>`).join('');
 
-  $('#statRange').addEventListener('change', e => toast('Período alterado para: ' + e.target.value.toLowerCase() + '.'));
-})();
+  $('#stMelhorStreak').textContent = habits.reduce((m, h) => Math.max(m, h.melhor), 0);
+  $('#stMedia').textContent = habits.length ? Math.round(habits.reduce((s, h) => s + h.taxa, 0) / habits.length) + '%' : '—';
+
+  let semanasAtivas = 0;
+  if(habits.length){
+    const maisAntigo = habits.reduce((min, h) => h.createdAt < min ? h.createdAt : min, habits[0].createdAt);
+    let cursor = segundaDe(new Date(maisAntigo + 'T00:00:00'));
+    const limite = segundaDe(new Date());
+    while(cursor <= limite){
+      if(statsSemana(cursor).concluidos > 0) semanasAtivas++;
+      cursor.setDate(cursor.getDate() + 7);
+    }
+  }
+  $('#stSemanas').textContent = semanasAtivas;
+}
+$('#statRange').addEventListener('change', e => toast('Período alterado para: ' + e.target.value.toLowerCase() + '.'));
 
 /* ===================== RELATÓRIOS ===================== */
-$('#reportBody').innerHTML = relatorios.map(r => {
-  const cls = r.taxa >= 70 ? 'g' : r.taxa >= 55 ? 'y' : 'r';
-  const lbl = r.taxa >= 70 ? 'Ótima' : r.taxa >= 55 ? 'Regular' : 'Abaixo';
-  return `<tr><td><b>${r.sem}</b></td><td>${r.ok}</td><td>${r.miss}</td><td>${r.xp} XP</td><td>${r.taxa}%</td><td><span class="chip ${cls}">${lbl}</span></td></tr>`;
-}).join('');
+function renderRelatorios(){
+  const linhas = [];
+  for(let i = 0; i < 5; i++){
+    const seg = segundaDe(new Date()); seg.setDate(seg.getDate() - 7 * i);
+    const dom = new Date(seg); dom.setDate(seg.getDate() + 6);
+    linhas.push({
+      label: `${String(seg.getDate()).padStart(2,'0')} – ${String(dom.getDate()).padStart(2,'0')}/${String(dom.getMonth()+1).padStart(2,'0')}`,
+      ...statsSemana(seg),
+    });
+  }
+
+  $('#reportBody').innerHTML = !habits.length
+    ? `<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px 0">Cadastre hábitos para começar a gerar relatórios.</td></tr>`
+    : linhas.map(r => {
+      const [cls, lbl] = r.possiveis === 0 ? ['', 'Sem dados'] : r.taxa >= 70 ? ['g','Ótima'] : r.taxa >= 40 ? ['y','Regular'] : ['r','Abaixo'];
+      return `<tr><td><b>${r.label}</b></td><td>${r.concluidos}</td><td>${r.perdidos}</td><td>${r.xp} XP</td><td>${r.taxa}%</td><td><span class="chip ${cls}">${lbl}</span></td></tr>`;
+    }).join('');
+
+  const [atual, anterior] = linhas;
+  const variacao = anterior && anterior.possiveis > 0 ? atual.taxa - anterior.taxa : null;
+  $('#relSemanasAtivas').textContent = linhas.filter(l => l.concluidos > 0).length;
+  $('#relVariacao').textContent = variacao === null ? '—' : (variacao >= 0 ? '+' : '') + variacao + '%';
+  $('#relTotalConcluido').textContent = linhas.reduce((s, l) => s + l.concluidos, 0);
+}
 
 /* ===================== CONQUISTAS ===================== */
-$('#badgeGrid').innerHTML = conquistas.map(c => `
-  <div class="card badge-card ${c.on?'':'locked'}">
-    <div class="hex">${c.on ? c.em : '🔒'}</div>
-    <strong>${c.nome}</strong>
-    <p>${c.desc}</p>
-    <span class="tag">${c.on ? 'Desbloqueada · ' + c.data : 'Bloqueada'}</span>
-  </div>`).join('');
-$('#achvCount').textContent = `${conquistas.filter(c=>c.on).length} de ${conquistas.length} desbloqueadas`;
+function calcularConquistas(){
+  const totalXp = profile?.total_xp ?? 0;
+  const nivel = Math.floor(totalXp / 150) + 1;
+  const melhorStreakGeral = habits.reduce((m, h) => Math.max(m, h.melhor), 0);
+  const diasComLog = [...new Set(habitLogRows.map(r => r.data))];
+  const diaPerfeito = diasComLog.some(ds => {
+    const ativos = habitosAtivosEm(ds);
+    return ativos.length > 0 && ativos.every(h => habitLogs.get(h.id)?.has(ds));
+  });
+  const metasCumpridas = metas.filter(m => m.at >= m.alvo).length;
+  return {
+    primeiroPasso: habitLogRows.length > 0,
+    madrugador: habitLogRows.some(r => new Date(r.created_at).getHours() < 7),
+    diaPerfeito,
+    streak7: melhorStreakGeral >= 7,
+    streak30: melhorStreakGeral >= 30,
+    streak100: melhorStreakGeral >= 100,
+    xp200: totalXp >= 200,
+    xp1000: totalXp >= 1000,
+    xp5000: totalXp >= 5000,
+    nivel5: nivel >= 5,
+    nivel10: nivel >= 10,
+    cincoHabitos: habits.length >= 5,
+    cinquentaConclusoes: habitLogRows.length >= 50,
+    metaCumprida: metasCumpridas >= 1,
+    tresMetas: metasCumpridas >= 3,
+    primeiraCompra: (profile?.moedas_gastas || 0) > 0,
+  };
+}
+function renderConquistas(){
+  const status = calcularConquistas();
+  const desbloqueadas = conquistas.filter(c => status[c.chave]);
+  $('#badgeGrid').innerHTML = conquistas.map(c => {
+    const on = status[c.chave];
+    return `<div class="card badge-card ${on?'':'locked'}">
+      <div class="hex">${on ? c.em : '🔒'}</div>
+      <strong>${c.nome}</strong>
+      <p>${c.desc}</p>
+      <span class="tag">${on ? 'Desbloqueada' : 'Bloqueada'}</span>
+    </div>`;
+  }).join('');
+  $('#achvCount').textContent = `${desbloqueadas.length} de ${conquistas.length} desbloqueadas`;
+
+  const ultima = desbloqueadas[desbloqueadas.length - 1];
+  $('#achvRecenteCard').innerHTML = ultima
+    ? `<div class="hex">${ultima.em}</div><div class="txt"><strong>${ultima.nome}</strong><p>${ultima.desc}</p></div>`
+    : `<div class="hex">🔒</div><div class="txt"><strong>Nenhuma ainda</strong><p>Complete hábitos para desbloquear conquistas.</p></div>`;
+}
 
 /* ===================== MISSÕES ===================== */
-function missaoHTML(m, tipo, i){
-  const pc = Math.round(m.at/m.alvo*100), pronto = m.at >= m.alvo;
+let missionClaims = new Set(); // 'chave|periodo' já resgatados
+function periodoDia(){ return hojeStr(); }
+function periodoSemana(){ return dateStr(segundaDe(new Date())); }
+async function loadMissionClaims(){
+  const { data, error } = await supabase.from('mission_claims').select('mission_key, period_key');
+  if(error) return;
+  missionClaims = new Set(data.map(r => `${r.mission_key}|${r.period_key}`));
+  renderMissoes();
+}
+function missaoHTML(m, periodo){
+  const at = Math.min(m.alvo, m.calcAt());
+  const pc = Math.round(at / m.alvo * 100);
+  const pronto = at >= m.alvo;
+  const resgatada = missionClaims.has(`${m.chave}|${periodo}`);
+  const label = resgatada ? 'Resgatada' : pronto ? 'Resgatar' : `${at}/${m.alvo}`;
   return `<div class="mission card" style="margin-bottom:10px;background:var(--card-2)">
     <div class="em">${m.em}</div>
     <div class="txt">
@@ -963,39 +1648,71 @@ function missaoHTML(m, tipo, i){
       <div class="bar ${pronto?'green':'violet'} sm" style="max-width:340px"><i style="width:${pc}%"></i></div>
     </div>
     <span class="reward">+${m.xp} XP · 🪙 ${m.moedas}</span>
-    <button class="btn ${pronto?'primary':''}" data-claim="${tipo}-${i}" ${pronto?'':'disabled'}>${pronto?'Resgatar':`${m.at}/${m.alvo}`}</button>
+    <button class="btn ${pronto && !resgatada?'primary':''}" data-claim="${m.chave}|${periodo}" ${pronto && !resgatada?'':'disabled'}>${label}</button>
   </div>`;
 }
-$('#dailyMissions').innerHTML  = missoesDia.map((m,i) => missaoHTML(m,'d',i)).join('');
-$('#weeklyMissions').innerHTML = missoesSemana.map((m,i) => missaoHTML(m,'s',i)).join('');
-document.addEventListener('click', e => {
+function renderMissoes(){
+  $('#dailyMissions').innerHTML  = MISSOES_DIA.map(m => missaoHTML(m, periodoDia())).join('');
+  $('#weeklyMissions').innerHTML = MISSOES_SEMANA.map(m => missaoHTML(m, periodoSemana())).join('');
+
+  const meiaNoite = new Date(); meiaNoite.setHours(24,0,0,0);
+  const horasRestantes = Math.round((meiaNoite - new Date()) / 3600000);
+  $('#renovaDia').textContent = `renova em ${horasRestantes}h`;
+  const diasParaDomingo = (7 - new Date().getDay()) % 7;
+  $('#renovaSemana').textContent = diasParaDomingo === 0 ? 'renova hoje à noite' : `renova em ${diasParaDomingo} dia${diasParaDomingo>1?'s':''}`;
+}
+document.addEventListener('click', async e => {
   const b = e.target.closest('[data-claim]'); if(!b) return;
-  const [tipo,i] = b.dataset.claim.split('-');
-  const m = (tipo === 'd' ? missoesDia : missoesSemana)[+i];
-  coins += m.moedas; updateCoins();
-  b.disabled = true; b.classList.remove('primary'); b.textContent = 'Resgatada';
+  const [chave, periodo] = b.dataset.claim.split('|');
+  const m = [...MISSOES_DIA, ...MISSOES_SEMANA].find(x => x.chave === chave);
+  if(!m || missionClaims.has(`${chave}|${periodo}`)) return;
+  b.disabled = true;
+  const { error } = await supabase.from('mission_claims').insert({mission_key: chave, period_key: periodo});
+  if(error){ toast('Não foi possível resgatar — pode já ter sido resgatada.'); renderMissoes(); return; }
+  missionClaims.add(`${chave}|${periodo}`);
+  coins += m.moedas; updateCoins(); syncCoins();
+  adjustXp(m.xp);
+  renderMissoes();
   toast(`Missão resgatada · +${m.xp} XP e ${m.moedas} moedas`);
 });
 
 /* ===================== LOJA ===================== */
 function updateCoins(){ $('#coinTop').textContent = coins; $('#coinShop').textContent = coins; renderShop(); }
+function jaTem(it){ return it.avatarSlug && (profile?.avatares_desbloqueados || []).includes(it.avatarSlug); }
 function renderShop(){
-  $('#shopGrid').innerHTML = loja.map((it,i) => `
-    <div class="card shop">
-      <div class="art" style="background:${it.bg}">${it.em}</div>
+  $('#shopGrid').innerHTML = loja.map((it,i) => {
+    const possuido = jaTem(it);
+    const podeComprar = !possuido && coins >= it.preco;
+    const label = possuido ? 'Você já tem' : coins >= it.preco ? 'Comprar' : 'Moedas insuficientes';
+    const avatar = it.avatarSlug && AVATARES.find(a => a.slug === it.avatarSlug);
+    return `<div class="card shop">
+      <div class="art" style="background:${it.bg}">${avatar ? `<img src="${avatar.img}" alt="${avatar.nome}" style="width:56px;height:56px;border-radius:50%;object-fit:cover">` : it.em}</div>
       <h4>${it.nome}</h4>
       <p>${it.desc}</p>
       <div class="buy">
         <span class="price">🪙 ${it.preco}</span>
-        <button class="btn ${coins>=it.preco?'primary':''}" data-buy="${i}" ${coins>=it.preco?'':'disabled'}>${coins>=it.preco?'Comprar':'Moedas insuficientes'}</button>
+        <button class="btn ${podeComprar?'primary':''}" data-buy="${i}" ${podeComprar?'':'disabled'}>${label}</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
-document.addEventListener('click', e => {
+document.addEventListener('click', async e => {
   const b = e.target.closest('[data-buy]'); if(!b) return;
   const it = loja[+b.dataset.buy];
-  if(coins < it.preco) return;
-  coins -= it.preco; updateCoins();
+  if(jaTem(it) || coins < it.preco) return;
+  if(it.avatarSlug){
+    const desbloqueados = [...(profile?.avatares_desbloqueados || []), it.avatarSlug];
+    const { error } = await supabase.from('profiles').update({avatares_desbloqueados: desbloqueados}).eq('id', currentUser.id);
+    if(error){ toast('Não foi possível concluir a compra.'); return; }
+    if(profile) profile.avatares_desbloqueados = desbloqueados;
+    if(typeof renderAvatarPicker === 'function') renderAvatarPicker();
+  }
+  coins -= it.preco; updateCoins(); syncCoins();
+  if(profile){
+    profile.moedas_gastas = (profile.moedas_gastas || 0) + it.preco;
+    supabase.from('profiles').update({moedas_gastas: profile.moedas_gastas}).eq('id', currentUser.id).then(({error}) => { if(error) toast('Não foi possível registrar a compra.'); });
+  }
+  if(typeof renderConquistas === 'function') renderConquistas();
   toast(`${it.nome} comprado por ${it.preco} moedas.`);
 });
 
@@ -1006,9 +1723,60 @@ document.addEventListener('click', e => {
   sw.setAttribute('aria-pressed', !on);
 });
 
+$('#configNome').addEventListener('change', async e => {
+  const nome = e.target.value.trim();
+  if(!nome){ e.target.value = profile?.nome || ''; return; }
+  const { error } = await supabase.from('profiles').update({nome}).eq('id', currentUser.id);
+  if(error){ toast('Não foi possível salvar o nome.'); return; }
+  if(profile) profile.nome = nome;
+  renderProfile();
+  toast('Nome atualizado.');
+});
+
+function renderAvatarPicker(){
+  const desbloqueados = new Set(profile?.avatares_desbloqueados || []);
+  AVATARES.forEach(a => { if(a.raridade === 'comum') desbloqueados.add(a.slug); });
+  const escolhido = profile?.avatar_escolhido;
+  const nenhumBtn = `<button type="button" class="avatar-opt ${!escolhido?'ativo':''}" data-avatar="" title="Usar foto do Google ou iniciais">
+      <span class="avatar-opt-img" style="display:grid;place-items:center;font-size:22px;color:var(--muted)">🚫</span><span style="font-size:10px;color:var(--muted)">Nenhum</span>
+    </button>`;
+  $('#avatarGrid').innerHTML = nenhumBtn + AVATARES.map(a => {
+    const liberado = desbloqueados.has(a.slug);
+    const ativo = escolhido === a.slug;
+    return `<button type="button" class="avatar-opt ${ativo?'ativo':''}" data-avatar="${a.slug}" ${liberado?'':'disabled'} title="${a.nome} · ${a.raridade}${liberado?'':' — compre na loja'}">
+      <span class="avatar-opt-img">
+        <img src="${a.img}" alt="${a.nome}" style="${liberado?'':'filter:grayscale(1);opacity:.35'}">
+        ${liberado ? '' : '<span class=\"avatar-lock\">🔒</span>'}
+      </span>
+      <span style="font-size:10px;color:${RARIDADE_COR[a.raridade]}">${a.nome}</span>
+    </button>`;
+  }).join('');
+}
+$('#avatarGrid').addEventListener('click', async e => {
+  const b = e.target.closest('[data-avatar]'); if(!b || b.disabled) return;
+  const slug = b.dataset.avatar || null;
+  const { error } = await supabase.from('profiles').update({avatar_escolhido: slug}).eq('id', currentUser.id);
+  if(error){ toast('Não foi possível salvar o avatar.'); return; }
+  if(profile) profile.avatar_escolhido = slug;
+  renderAvatarPicker();
+  renderProfile();
+  toast(slug ? 'Avatar atualizado.' : 'Voltou a usar foto/iniciais.');
+});
+
 /* ===================== INÍCIO ===================== */
-renderHabits(); renderHabitCards(); renderResumo(); renderShop();
+async function loadHabits(){
+  const { data, error } = await supabase.from('habits').select('*').order('created_at');
+  if(error){ toast('Não foi possível carregar os hábitos do Supabase.'); return; }
+  habits = data.map(rowToHabit);
+  renderHabits(); renderHabitCards(); renderResumo();
+  await loadHabitLogs();
+  await loadMissionClaims();
+}
+renderShop();
 go(location.hash.slice(1) || 'hoje');
+loadProfile();
+loadHabits();
+loadGoals();
 </script>
 </body>
 </html>

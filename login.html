@@ -23,7 +23,7 @@ body{
   display:flex;align-items:center;justify-content:center;
   min-height:100vh;padding:28px;
 }
-button{font-family:inherit;cursor:pointer}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 input{font-family:inherit}
 :focus-visible{outline:2px solid var(--violet);outline-offset:2px}
 a{color:inherit}
@@ -184,11 +184,20 @@ form{margin-top:30px}
 
   <!-- ============ LADO DIREITO (formulário) ============ -->
   <section class="form-side">
-    <span class="eyebrow">Bem-vindo de volta</span>
-    <h2>Faça seu login</h2>
-    <p class="sub">Continue sua jornada e construa uma versão melhor de você todos os dias.</p>
+    <span class="eyebrow" id="eyebrow">Bem-vindo de volta</span>
+    <h2 id="formTitle">Faça seu login</h2>
+    <p class="sub" id="formSub">Continue sua jornada e construa uma versão melhor de você todos os dias.</p>
+    <p class="sub" id="formMsg" style="display:none;color:#86e6a8;margin-top:-4px"></p>
 
     <form id="loginForm" novalidate>
+      <div class="field" id="nomeField" style="display:none">
+        <label for="nome">Nome</label>
+        <div class="input-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="nome" placeholder="Seu nome" autocomplete="name">
+        </div>
+      </div>
+
       <div class="field" id="emailField">
         <label for="email">E-mail</label>
         <div class="input-wrap">
@@ -199,7 +208,7 @@ form{margin-top:30px}
       </div>
 
       <div class="field" id="passField">
-        <label for="pass">Senha</label>
+        <label for="pass" id="passLabel">Senha</label>
         <div class="input-wrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
           <input type="password" id="pass" placeholder="Sua senha" autocomplete="current-password" style="padding-right:44px">
@@ -210,7 +219,7 @@ form{margin-top:30px}
         <p class="err">A senha precisa ter pelo menos 6 caracteres.</p>
       </div>
 
-      <div class="row-between">
+      <div class="row-between" id="rememberRow">
         <button type="button" class="remember" id="rememberBtn" aria-pressed="true">
           <span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L19 7"/></svg></span>
           Lembrar de mim
@@ -218,15 +227,15 @@ form{margin-top:30px}
         <a href="#" class="forgot" id="forgotLink">Esqueceu a senha?</a>
       </div>
 
-      <button type="submit" class="btn-submit">
-        Entrar
+      <button type="submit" class="btn-submit" id="submitBtn">
+        <span id="submitLabel">Entrar</span>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
       </button>
     </form>
 
-    <div class="divider">ou</div>
+    <div class="divider" id="oauthDivider">ou</div>
 
-    <div class="oauth">
+    <div class="oauth" id="oauthRow">
       <button class="oauth-btn" id="googleBtn">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.8 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 6.1 29.5 4 24 4c-7.8 0-14.5 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.3-2.1 14-5.5l-6.5-5.4C29.4 34.9 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.4 39.6 16.1 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.2 3.2-3.6 5.7-6.7 7.1l6.5 5.4C38.1 37.7 44 32.4 44 24c0-1.4-.1-2.4-.4-3.5z"/></svg>
         Entrar com Google
@@ -237,12 +246,13 @@ form{margin-top:30px}
       </button>
     </div>
 
-    <p class="foot-link">Ainda não tem uma conta? <a href="#" id="createAccount">Criar conta</a></p>
+    <p class="foot-link" id="footLink">Ainda não tem uma conta? <a href="#" id="createAccount">Criar conta</a></p>
   </section>
 
 </div>
 
-<script>
+<script type="module">
+import { supabase } from './supabase-client.js';
 const $ = s => document.querySelector(s);
 
 /* mostrar/ocultar senha */
@@ -262,41 +272,142 @@ $('#rememberBtn').addEventListener('click', () => {
   b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
 });
 
-/* validação simples + envio */
+/* validação simples */
 function setInvalid(fieldSel, on){ $(fieldSel).classList.toggle('invalid', on); }
-
-$('#loginForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const email = $('#email').value.trim();
-  const pass  = $('#pass').value;
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const passOk  = pass.length >= 6;
-
-  setInvalid('#emailField', !emailOk);
-  setInvalid('#passField', !passOk);
-  if(!emailOk) $('#email').focus();
-  else if(!passOk) $('#pass').focus();
-
-  if(emailOk && passOk){
-    const btn = document.querySelector('.btn-submit');
-    const original = btn.innerHTML;
-    btn.innerHTML = 'Entrando…';
-    btn.disabled = true;
-    setTimeout(() => {
-      btn.innerHTML = original;
-      btn.disabled = false;
-      alert('Login validado (demonstração). Conecte isso ao seu backend de autenticação.');
-    }, 900);
-  }
-});
-
 $('#email').addEventListener('input', () => setInvalid('#emailField', false));
 $('#pass').addEventListener('input', () => setInvalid('#passField', false));
 
-$('#forgotLink').addEventListener('click', e => { e.preventDefault(); alert('Fluxo de recuperação de senha entraria aqui.'); });
-$('#createAccount').addEventListener('click', e => { e.preventDefault(); alert('Levaria à página de criação de conta.'); });
-$('#googleBtn').addEventListener('click', () => alert('Login com Google (demonstração).'));
-$('#appleBtn').addEventListener('click', () => alert('Login com Apple (demonstração).'));
+/* ===================== MODOS DO FORMULÁRIO ===================== */
+let mode = 'login';
+function bindFootLink(){
+  $('#createAccount')?.addEventListener('click', e => {
+    e.preventDefault();
+    setMode(mode === 'login' ? 'signup' : 'login');
+  });
+}
+function setMode(m){
+  mode = m;
+  $('#formMsg').style.display = 'none';
+  $('#nomeField').style.display = m === 'signup' ? '' : 'none';
+  $('#emailField').style.display = m === 'recovery' ? 'none' : '';
+  $('#passField').style.display = m === 'forgot' ? 'none' : '';
+  $('#rememberRow').style.display = m === 'login' ? 'flex' : 'none';
+  $('#oauthDivider').style.display = (m === 'forgot' || m === 'recovery') ? 'none' : 'flex';
+  $('#oauthRow').style.display = (m === 'forgot' || m === 'recovery') ? 'none' : 'grid';
+
+  const textos = {
+    login:    ['Bem-vindo de volta', 'Faça seu login', 'Continue sua jornada e construa uma versão melhor de você todos os dias.', 'Senha', 'Entrar', 'Ainda não tem uma conta? <a href="#" id="createAccount">Criar conta</a>'],
+    signup:   ['Comece agora', 'Crie sua conta', 'Cadastre-se para acompanhar seus próprios hábitos e metas.', 'Senha', 'Criar conta', 'Já tem uma conta? <a href="#" id="createAccount">Entrar</a>'],
+    forgot:   ['Recuperar acesso', 'Esqueceu a senha?', 'Informe seu e-mail e enviaremos um link para você criar uma nova senha.', 'Senha', 'Enviar link', 'Lembrou a senha? <a href="#" id="createAccount">Entrar</a>'],
+    recovery: ['Nova senha', 'Defina sua nova senha', 'Digite a nova senha para a sua conta.', 'Nova senha', 'Salvar nova senha', ''],
+  };
+  const [eyebrow, titulo, sub, passLabel, submitLabel, footHtml] = textos[m];
+  $('#eyebrow').textContent = eyebrow;
+  $('#formTitle').textContent = titulo;
+  $('#formSub').textContent = sub;
+  $('#passLabel').textContent = passLabel;
+  $('#submitLabel').textContent = submitLabel;
+  $('#footLink').innerHTML = footHtml;
+  bindFootLink();
+}
+bindFootLink();
+
+function setLoading(on){
+  $('#submitBtn').disabled = on;
+  if(on){ $('#submitBtn').dataset.prev = $('#submitLabel').textContent; $('#submitLabel').textContent = 'Aguarde…'; }
+  else if($('#submitBtn').dataset.prev){ $('#submitLabel').textContent = $('#submitBtn').dataset.prev; }
+}
+function showMsg(text, isError){
+  const el = $('#formMsg');
+  el.textContent = text;
+  el.style.color = isError ? '#fca5a5' : '#86e6a8';
+  el.style.display = 'block';
+}
+
+/* ===================== ENVIO ===================== */
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#email').value.trim();
+  const pass  = $('#pass').value;
+  const nome  = $('#nome').value.trim();
+
+  if(mode === 'forgot'){
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    setInvalid('#emailField', !emailOk);
+    if(!emailOk){ $('#email').focus(); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login.html' });
+    setLoading(false);
+    if(error){ showMsg(error.message, true); return; }
+    showMsg('Enviamos um link de recuperação para o seu e-mail.', false);
+    return;
+  }
+
+  if(mode === 'recovery'){
+    const passOk = pass.length >= 6;
+    setInvalid('#passField', !passOk);
+    if(!passOk){ $('#pass').focus(); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: pass });
+    setLoading(false);
+    if(error){ showMsg(error.message, true); return; }
+    showMsg('Senha atualizada! Redirecionando…', false);
+    setTimeout(() => location.href = 'index.html', 1200);
+    return;
+  }
+
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const passOk  = pass.length >= 6;
+  setInvalid('#emailField', !emailOk);
+  setInvalid('#passField', !passOk);
+  if(!emailOk){ $('#email').focus(); return; }
+  if(!passOk){ $('#pass').focus(); return; }
+
+  setLoading(true);
+  if(mode === 'signup'){
+    const { data, error } = await supabase.auth.signUp({
+      email, password: pass,
+      options: { data: { full_name: nome || email.split('@')[0] } },
+    });
+    setLoading(false);
+    if(error){ showMsg(error.message, true); return; }
+    if(data.session){ location.href = 'index.html'; return; }
+    showMsg('Conta criada! Verifique seu e-mail para confirmar antes de entrar.', false);
+  } else {
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    setLoading(false);
+    if(error){ showMsg(error.message, true); return; }
+    location.href = 'index.html';
+  }
+});
+
+$('#forgotLink').addEventListener('click', e => { e.preventDefault(); setMode('forgot'); });
+
+$('#googleBtn').addEventListener('click', async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.origin + '/index.html' },
+  });
+  if(error) showMsg(error.message, true);
+});
+$('#appleBtn').addEventListener('click', () => alert('Login com Apple (demonstração) — ainda não configurado.'));
+
+/* ===================== SESSÃO ===================== */
+// Um link de recuperação de senha também cria uma sessão temporária — não podemos
+// redirecionar direto para o dashboard nesse caso, senão o usuário nunca vê o
+// formulário de nova senha.
+const urlPareceRecuperacao = /type=recovery/.test(location.hash) || /type=recovery/.test(location.search);
+
+supabase.auth.onAuthStateChange((event) => {
+  if(event === 'PASSWORD_RECOVERY') setMode('recovery');
+});
+
+setMode('login');
+
+if(!urlPareceRecuperacao){
+  const { data: { session } } = await supabase.auth.getSession();
+  if(session) location.href = 'index.html';
+}
 </script>
 </body>
 </html>

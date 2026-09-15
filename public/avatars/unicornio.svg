@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5b8e0"/>
+      <stop offset="100%" stop-color="#b98ae0"/>
+    </linearGradient>
+    <linearGradient id="horn" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#f9a8d4"/>
+      <stop offset="50%" stop-color="#a7f3d0"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="url(#bg)"/>
+  <path d="M56 14l8 30-16 4z" fill="url(#horn)"/>
+  <path d="M40 30c10-4 12 10 6 10M78 30c-10-4-12 10-6 10" fill="#fff" opacity=".8"/>
+  <ellipse cx="60" cy="70" rx="32" ry="28" fill="#ffffff"/>
+  <ellipse cx="60" cy="88" rx="14" ry="11" fill="#fbeaf6"/>
+  <circle cx="46" cy="64" r="5" fill="#5b3a70"/>
+  <circle cx="74" cy="64" r="5" fill="#5b3a70"/>
+  <circle cx="47.4" cy="62.2" r="1.6" fill="#fff"/>
+  <circle cx="75.4" cy="62.2" r="1.6" fill="#fff"/>
+  <path d="M22 46c8-6 14-2 18 4-8 2-14 0-18-4z" fill="#f9a8d4"/>
+  <path d="M22 58c8-4 15 0 18 6-9 1-14-2-18-6z" fill="#a7f3d0"/>
+</svg>
