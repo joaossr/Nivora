@@ -97,12 +97,16 @@ npx vercel --prod
   calendário, incluindo dias retroativos. Metas sem nenhum hábito vinculado
   mantêm o último valor conhecido (o `atual` não é forçado a zero).
 - **Checkpoints opcionais**: cada meta pode ter marcos intermediários
-  personalizados (ex.: 15/30/60 dias de uma meta de 90). São preenchidos e
+  personalizados (ex.: 15/30/60 dias de uma meta de 90). Cada checkpoint
+  tem um valor numérico (o que dispara o desbloqueio automático) e um
+  **rótulo em palavras opcional** (ex.: "Metade do caminho") — se não tiver
+  rótulo, mostra o número com a unidade da meta. São preenchidos e
   desfeitos sozinhos conforme o progresso avança ou recua, aparecem como
   pontos na barra de progresso e como uma lista com ✓/○ no card da meta. O
-  modal tem um botão "Sugerir automaticamente" (25%/50%/75% do alvo) só
-  como atalho — o usuário pode adicionar, editar ou remover qualquer
-  checkpoint livremente, e metas sem checkpoint nenhum funcionam normal.
+  modal tem um botão "Sugerir automaticamente" (25%/50%/75% do alvo, já com
+  rótulos "Começando"/"Na metade"/"Quase lá") só como atalho — o usuário
+  pode adicionar, editar ou remover qualquer checkpoint livremente, e metas
+  sem checkpoint nenhum funcionam normal.
 - **Conquistas com desbloqueio automático**: calculadas a partir do
   progresso real (XP total, streaks, nº de hábitos, dias perfeitos, metas
   concluídas, compras na loja) — sem tabela própria, recalculadas a cada
@@ -150,7 +154,8 @@ npx vercel --prod
 - `public.habit_goals`: vínculo N:N entre `habits` e `goals`, com
   `incremento` (quanto cada conclusão do hábito soma na meta).
 - `public.goal_checkpoints`: marcos opcionais de uma meta (`valor`,
-  `atingido`, `atingido_em`) — recalculados junto com o progresso.
+  `rotulo` opcional em texto, `atingido`, `atingido_em`) — recalculados
+  junto com o progresso.
 - `public.mission_claims`: uma linha por `(mission_key, period_key)`
   resgatado — evita resgatar a mesma missão duas vezes no período.
 - RLS em todas as tabelas: cada usuário só enxerga e altera as próprias

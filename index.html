@@ -1498,9 +1498,9 @@ function renderGoals(){
         </div>
         <div class="bar ${m.cor}" style="margin:18px 0 6px;position:relative">
           <i style="width:${pc}%"></i>
-          ${cps.map(cp => `<div class="checkpoint-marker ${cp.atingido?'atingido':''}" style="left:${Math.min(100, cp.valor/m.alvo*100)}%" title="${formatNum(cp.valor)} ${m.un}${cp.atingido?' · alcançado':''}"></div>`).join('')}
+          ${cps.map(cp => `<div class="checkpoint-marker ${cp.atingido?'atingido':''}" style="left:${Math.min(100, cp.valor/m.alvo*100)}%" title="${cp.rotulo ? cp.rotulo + ' — ' : ''}${formatNum(cp.valor)} ${m.un}${cp.atingido?' · alcançado':''}"></div>`).join('')}
         </div>
-        ${cps.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${cps.map(cp => `<span class="tag" style="font-size:11px;${cp.atingido?'color:#6ee7b7;border-color:rgba(52,211,153,.35)':''}">${cp.atingido?'✓':'○'} ${formatNum(cp.valor)} ${m.un}</span>`).join('')}</div>` : ''}
+        ${cps.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${cps.map(cp => `<span class="tag" style="font-size:11px;${cp.atingido?'color:#6ee7b7;border-color:rgba(52,211,153,.35)':''}">${cp.atingido?'✓':'○'} ${cp.rotulo ? cp.rotulo : formatNum(cp.valor) + ' ' + m.un}</span>`).join('')}</div>` : ''}
         <div style="display:flex;color:var(--muted);font-size:12.5px">
           <span>${concluida ? '🏆 Concluída' : pc + '% concluído'}</span><span style="margin-left:auto">Prazo: ${m.prazo}</span>
         </div>
@@ -1550,13 +1550,16 @@ function renderCheckpointsEditor(){
     ? `<p style="color:var(--muted-2);font-size:11.5px">Nenhum checkpoint ainda.</p>`
     : checkpointsEditando.map((cp, i) => `
       <div class="field-row" style="align-items:center;margin-bottom:0">
-        <input type="number" min="0.01" step="any" value="${cp.valor}" data-cp-valor="${i}" placeholder="valor" style="flex:1">
+        <input type="number" min="0.01" step="any" value="${cp.valor}" data-cp-valor="${i}" placeholder="valor" style="width:80px;flex:none">
+        <input type="text" value="${cp.rotulo || ''}" data-cp-rotulo="${i}" placeholder="rótulo (opcional): Iniciante…" maxlength="40" style="flex:1">
         <button type="button" class="icon-btn-sm danger" data-cp-remove="${i}" title="Remover" aria-label="Remover checkpoint">✕</button>
       </div>`).join('');
 }
 $('#goalCheckpointsList').addEventListener('input', e => {
-  const inp = e.target.closest('[data-cp-valor]'); if(!inp) return;
-  checkpointsEditando[+inp.dataset.cpValor].valor = +inp.value || 0;
+  const valorInp = e.target.closest('[data-cp-valor]');
+  if(valorInp){ checkpointsEditando[+valorInp.dataset.cpValor].valor = +valorInp.value || 0; return; }
+  const rotuloInp = e.target.closest('[data-cp-rotulo]');
+  if(rotuloInp){ checkpointsEditando[+rotuloInp.dataset.cpRotulo].rotulo = rotuloInp.value.trim(); }
 });
 $('#goalCheckpointsList').addEventListener('click', e => {
   const btn = e.target.closest('[data-cp-remove]'); if(!btn) return;
@@ -1564,7 +1567,7 @@ $('#goalCheckpointsList').addEventListener('click', e => {
   renderCheckpointsEditor();
 });
 $('#addCheckpointBtn').addEventListener('click', () => {
-  checkpointsEditando.push({id:null, valor:''});
+  checkpointsEditando.push({id:null, valor:'', rotulo:''});
   renderCheckpointsEditor();
   $(`[data-cp-valor="${checkpointsEditando.length-1}"]`).focus();
 });
@@ -1572,9 +1575,10 @@ $('#autoCheckpointBtn').addEventListener('click', () => {
   const alvo = +$('#goalAlvo').value || 0;
   if(!alvo){ toast('Defina o alvo da meta primeiro.'); return; }
   const inteiro = Number.isInteger(alvo);
-  checkpointsEditando = [0.25, 0.5, 0.75].map(f => {
+  const rotulos = ['Começando', 'Na metade', 'Quase lá'];
+  checkpointsEditando = [0.25, 0.5, 0.75].map((f, i) => {
     const bruto = alvo * f;
-    return {id:null, valor: inteiro ? Math.max(1, Math.round(bruto)) : Math.round(bruto*100)/100};
+    return {id:null, valor: inteiro ? Math.max(1, Math.round(bruto)) : Math.round(bruto*100)/100, rotulo: rotulos[i]};
   });
   renderCheckpointsEditor();
 });
@@ -1592,7 +1596,7 @@ function openGoalModal(meta){
     $('#goalUnidade').value = meta.un;
     $('#goalEmoji').value = meta.em;
     $('#goalPrazo').value = meta.prazoISO || '';
-    checkpointsEditando = checkpointsDaMeta(meta.id).map(cp => ({id: cp.id, valor: Number(cp.valor)}));
+    checkpointsEditando = checkpointsDaMeta(meta.id).map(cp => ({id: cp.id, valor: Number(cp.valor), rotulo: cp.rotulo || ''}));
   } else {
     $('#goalModalTitle').textContent = 'Nova meta';
     $('#goalModalSubmit').textContent = 'Adicionar meta';
@@ -1620,14 +1624,15 @@ async function salvarCheckpoints(goalId){
     }
   }
   for(const cp of validos){
+    const rotulo = (cp.rotulo || '').trim() || null;
     if(cp.id){
       const atual = goalCheckpoints.find(c => c.id === cp.id);
-      if(atual && Number(atual.valor) !== cp.valor){
-        const { error } = await supabase.from('goal_checkpoints').update({valor: cp.valor}).eq('id', cp.id);
-        if(!error) atual.valor = cp.valor;
+      if(atual && (Number(atual.valor) !== cp.valor || (atual.rotulo || null) !== rotulo)){
+        const { error } = await supabase.from('goal_checkpoints').update({valor: cp.valor, rotulo}).eq('id', cp.id);
+        if(!error){ atual.valor = cp.valor; atual.rotulo = rotulo; }
       }
     } else {
-      const { data, error } = await supabase.from('goal_checkpoints').insert({goal_id: goalId, valor: cp.valor}).select().single();
+      const { data, error } = await supabase.from('goal_checkpoints').insert({goal_id: goalId, valor: cp.valor, rotulo}).select().single();
       if(!error) goalCheckpoints.push(data);
     }
   }
