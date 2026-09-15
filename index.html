@@ -1530,17 +1530,30 @@ $('#goalCards').addEventListener('click', async e => {
   const cpBtn = e.target.closest('[data-toggle-cp]');
   if(cpBtn){ await alternarCheckpointManual(cpBtn.dataset.toggleCp, cpBtn.dataset.goalCp); return; }
 });
-/* Marca/desmarca um checkpoint à mão — só é permitido em metas sem hábito vinculado (progresso não é automático nelas). */
+/* Marca/desmarca um checkpoint à mão — só é permitido em metas sem hábito vinculado (progresso não é automático nelas).
+   Como nessas metas o checkpoint é o próprio sinal de progresso, marcar/desmarcar também precisa mover a barra. */
 async function alternarCheckpointManual(checkpointId, goalId){
   if(habitosVinculadosA(goalId).length){ toast('Essa meta tem hábitos vinculados — o checkpoint é automático.'); return; }
+  const meta = metas.find(m => m.id === goalId);
   const cp = goalCheckpoints.find(c => c.id === checkpointId);
-  if(!cp) return;
+  if(!meta || !cp) return;
   const novoValor = !cp.atingido;
   const atingido_em = novoValor ? new Date().toISOString() : null;
   const { error } = await supabase.from('goal_checkpoints').update({atingido: novoValor, atingido_em}).eq('id', checkpointId);
   if(error){ toast('Não foi possível salvar o checkpoint.'); return; }
   cp.atingido = novoValor;
   cp.atingido_em = atingido_em;
+
+  const atingidos = checkpointsDaMeta(goalId).filter(c => c.atingido);
+  meta.at = atingidos.length ? Math.max(...atingidos.map(c => Number(c.valor))) : 0;
+
+  const jaConcluida = !!meta.concluidaEm;
+  const agoraConcluida = meta.alvo > 0 && meta.at >= meta.alvo;
+  if(agoraConcluida && !jaConcluida) meta.concluidaEm = new Date().toISOString();
+  else if(!agoraConcluida && jaConcluida) meta.concluidaEm = null;
+
+  const { error: metaError } = await supabase.from('goals').update({atual: meta.at, concluida_em: meta.concluidaEm}).eq('id', goalId);
+  if(metaError) toast('Não foi possível salvar o progresso da meta.');
   renderGoals();
 }
 async function excluirMeta(m){
