@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NIVORA — Seu progresso, todo dia.</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -82,6 +84,10 @@ input,select{font-family:inherit}
 .greet p{color:var(--muted);margin-top:3px;font-size:14px}
 .top-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
 .icon-btn{width:46px;height:46px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);position:relative;transition:border-color .15s,color .15s}
+.icon-btn-sm{width:30px;height:30px;border-radius:9px;background:var(--card-2);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex-shrink:0;transition:border-color .15s,color .15s}
+.icon-btn-sm svg{width:14px;height:14px}
+.icon-btn-sm:hover{border-color:var(--line-2);color:var(--txt)}
+.icon-btn-sm.danger:hover{color:#fca5a5;border-color:rgba(239,68,68,.4)}
 .icon-btn:hover{color:var(--txt);border-color:var(--line-2)}
 .badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid var(--bg)}
 .coins{display:flex;align-items:center;gap:8px;height:46px;padding:0 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px;color:var(--amber)}
@@ -565,9 +571,9 @@ select,input[type=text],input[type=time],input[type=number],input[type=date]{bac
         <button class="btn primary" id="newGoal">+ Nova meta</button>
       </div>
       <div class="cols c3" style="margin-bottom:18px">
-        <div class="card pad stat"><span class="em">🎯</span><div class="n">3</div><div class="l">metas ativas</div></div>
-        <div class="card pad stat"><span class="em">✅</span><div class="n">1</div><div class="l">meta concluída</div></div>
-        <div class="card pad stat"><span class="em">📅</span><div class="n">108</div><div class="l">dias até o fim do ano</div></div>
+        <div class="card pad stat"><span class="em">🎯</span><div class="n" id="metasAtivas">0</div><div class="l">metas ativas</div></div>
+        <div class="card pad stat"><span class="em">✅</span><div class="n" id="metasConcluidas">0</div><div class="l">metas concluídas</div></div>
+        <div class="card pad stat"><span class="em">📅</span><div class="n" id="diasFimAno">0</div><div class="l">dias até o fim do ano</div></div>
       </div>
       <div class="cols c2" id="goalCards"></div>
     </section>
@@ -998,16 +1004,17 @@ const MISSOES_SEMANA = [
   {chave:'w_dez_habitos', em:'📈', nome:'Conclua 10 hábitos esta semana', desc:'Some todas as conclusões da semana.', alvo:10, xp:60, moedas:50, calcAt:() => statsSemana(segundaDe(new Date())).concluidos},
 ];
 
+/* Todos os avatares são livres para qualquer usuário escolher — não são mais vendidos na Loja. */
 const AVATARES = [
-  {slug:'urso',       img:'avatars/urso.svg',      nome:'Urso',       raridade:'comum'},
-  {slug:'raposa',     img:'avatars/raposa.svg',    nome:'Raposa',     raridade:'comum'},
-  {slug:'coruja',     img:'avatars/coruja.svg',    nome:'Coruja',     raridade:'comum'},
-  {slug:'gato',       img:'avatars/gato.svg',      nome:'Gato',       raridade:'comum'},
-  {slug:'lobo',       img:'avatars/lobo.svg',      nome:'Lobo',       raridade:'raro'},
-  {slug:'tigre',      img:'avatars/tigre.svg',     nome:'Tigre',      raridade:'raro'},
-  {slug:'dragao',     img:'avatars/dragao.svg',    nome:'Dragão',     raridade:'épico'},
-  {slug:'fenix',      img:'avatars/fenix.svg',     nome:'Fênix',      raridade:'épico'},
-  {slug:'unicornio',  img:'avatars/unicornio.svg', nome:'Unicórnio',  raridade:'lendário'},
+  {slug:'urso',       img:'avatars/urso.jpg',      nome:'Urso',       raridade:'comum'},
+  {slug:'raposa',     img:'avatars/raposa.jpg',    nome:'Raposa',     raridade:'comum'},
+  {slug:'coruja',     img:'avatars/coruja.jpg',    nome:'Coruja',     raridade:'comum'},
+  {slug:'gato',       img:'avatars/gato.jpg',      nome:'Gato',       raridade:'comum'},
+  {slug:'lobo',       img:'avatars/lobo.jpg',      nome:'Lobo',       raridade:'raro'},
+  {slug:'tigre',      img:'avatars/tigre.jpg',     nome:'Tigre',      raridade:'raro'},
+  {slug:'dragao',     img:'avatars/dragao.jpg',    nome:'Dragão',     raridade:'épico'},
+  {slug:'fenix',      img:'avatars/fenix.jpg',     nome:'Fênix',      raridade:'épico'},
+  {slug:'unicornio',  img:'avatars/unicornio.jpg', nome:'Unicórnio',  raridade:'lendário'},
   {slug:'coroa',      img:'avatars/coroa.svg',     nome:'Realeza',    raridade:'lendário'},
 ];
 const RARIDADE_COR = {comum:'var(--muted)', raro:'var(--blue)', 'épico':'var(--violet)', 'lendário':'var(--amber)'};
@@ -1017,14 +1024,15 @@ const loja = [
   {em:'⚡', nome:'XP em dobro (24h)',  desc:'Todos os hábitos valem o dobro por um dia.', preco:200, bg:'linear-gradient(135deg,#7c3aed,#c084fc)'},
   {em:'🎨', nome:'Tema Aurora',        desc:'Uma paleta verde-azulada para o painel.', preco:350, bg:'linear-gradient(135deg,#065f46,#34d399)'},
   {em:'🌇', nome:'Tema Pôr do sol',    desc:'O visual laranja que você já conhece.', preco:350, bg:'linear-gradient(135deg,#9a3412,#f59e0b)'},
-  {em:'🐺', nome:'Avatar Lobo',        desc:'Avatar raro para o seu perfil.', preco:150, bg:'linear-gradient(135deg,#374151,#9ca3af)', avatarSlug:'lobo'},
-  {em:'🐯', nome:'Avatar Tigre',       desc:'Avatar raro para o seu perfil.', preco:150, bg:'linear-gradient(135deg,#7c2d12,#f97316)', avatarSlug:'tigre'},
-  {em:'🐉', nome:'Avatar Dragão',      desc:'Avatar épico para o seu perfil.', preco:300, bg:'linear-gradient(135deg,#4c1d95,#a78bfa)', avatarSlug:'dragao'},
-  {em:'🔥', nome:'Avatar Fênix',       desc:'Avatar épico para o seu perfil.', preco:300, bg:'linear-gradient(135deg,#7c2d12,#fb923c)', avatarSlug:'fenix'},
-  {em:'🦄', nome:'Avatar Unicórnio',   desc:'Avatar lendário — o mais raro da loja.', preco:500, bg:'linear-gradient(135deg,#831843,#f472b6)', avatarSlug:'unicornio'},
-  {em:'👑', nome:'Avatar Realeza',     desc:'Avatar lendário — o mais raro da loja.', preco:500, bg:'linear-gradient(135deg,#78350f,#fbbf24)', avatarSlug:'coroa'},
   {em:'📊', nome:'Relatórios avançados', desc:'Gráficos por hora e comparativos anuais.', preco:420, bg:'linear-gradient(135deg,#0c4a6e,#38bdf8)'},
   {em:'🎯', nome:'Slot de meta extra', desc:'Acompanhe mais uma meta ao mesmo tempo.', preco:150, bg:'linear-gradient(135deg,#831843,#f472b6)'},
+  {img:'rewards/acai.svg',        nome:'Açaí pequeno',           desc:'Um docinho pra comemorar o progresso.', preco:70,  bg:'linear-gradient(135deg,#4c1d95,#8b5cf6)'},
+  {img:'rewards/lanche.svg',      nome:'Lanche no final de semana', desc:'Peça aquele lanche que você tá querendo.', preco:100, bg:'linear-gradient(135deg,#78350f,#fbbf24)'},
+  {img:'rewards/tempo-livre.svg', nome:'Tempo livre sem culpa',  desc:'Uma hora só sua, sem pensar em produtividade.', preco:130, bg:'linear-gradient(135deg,#0e4a58,#67e8f9)'},
+  {img:'rewards/sair.svg',        nome:'Sair para fazer algo',   desc:'Um passeio, um cinema, o que bater vontade.', preco:160, bg:'linear-gradient(135deg,#065f46,#34d399)'},
+  {img:'rewards/ifood.svg',       nome:'iFood no final de semana', desc:'Peça sua comida favorita sem pesar na consciência.', preco:280, bg:'linear-gradient(135deg,#c62828,#ff6b4a)'},
+  {img:'rewards/premium.svg',     nome:'Recompensa premium',     desc:'Algo especial — você trabalhou duro pra isso.', preco:450, bg:'linear-gradient(135deg,#92400e,#fde68a)'},
+  {img:'rewards/comprar.svg',     nome:'Compre algo que você quer', desc:'A recompensa mais cara — guarde moedas pra ela.', preco:650, bg:'linear-gradient(135deg,#78350f,#fde68a)'},
 ];
 
 
@@ -1141,6 +1149,10 @@ function renderHabitCards(){
       <div class="top">
         <div class="big">${h.em}</div>
         <div style="flex:1"><h4>${h.nome}</h4><div class="sub">${h.cat} · Todos os dias · +${h.xp} XP</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="icon-btn-sm" data-edit="${h.id}" title="Editar hábito" aria-label="Editar ${h.nome}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn-sm danger" data-delete="${h.id}" title="Excluir hábito" aria-label="Excluir ${h.nome}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+        </div>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)">
@@ -1155,23 +1167,51 @@ function renderHabitCards(){
     </div>`).join('');
 }
 $('#habitCards').addEventListener('click', e => {
-  const b = e.target.closest('[data-toggle]'); if(!b) return;
-  const h = habits.find(x => x.id === b.dataset.toggle);
-  setHabitDone(h.id, !h.done);
+  const toggleBtn = e.target.closest('[data-toggle]');
+  if(toggleBtn){ const h = habits.find(x => x.id === toggleBtn.dataset.toggle); setHabitDone(h.id, !h.done); return; }
+  const editBtn = e.target.closest('[data-edit]');
+  if(editBtn){ openHabitModal(habits.find(x => x.id === editBtn.dataset.edit)); return; }
+  const delBtn = e.target.closest('[data-delete]');
+  if(delBtn){ excluirHabito(habits.find(x => x.id === delBtn.dataset.delete)); return; }
 });
 
-/* ---- novo hábito (form conectado ao Supabase) ---- */
-function openHabitModal(){
+async function excluirHabito(h){
+  if(!confirm(`Excluir "${h.nome}"? Isso também apaga todo o histórico de conclusões desse hábito.`)) return;
+  const { error } = await supabase.from('habits').delete().eq('id', h.id);
+  if(error){ toast('Não foi possível excluir o hábito.'); return; }
+  habits = habits.filter(x => x.id !== h.id);
+  habitLogs.delete(h.id);
+  habitLogRows = habitLogRows.filter(r => r.habit_id !== h.id);
+  aplicarEstatisticasHabitos();
+  toast(`${h.nome} excluído.`);
+}
+
+/* ---- novo hábito / editar hábito (form conectado ao Supabase) ---- */
+let habitoEditando = null;
+function openHabitModal(habito){
+  habitoEditando = habito || null;
   $('#habitForm').reset();
-  $('#habitEmoji').value = '✅';
-  $('#habitXp').value = 10;
+  if(habito){
+    $('#habitModalTitle').textContent = 'Editar hábito';
+    $('#habitModalSubmit').textContent = 'Salvar alterações';
+    $('#habitNome').value = habito.nome;
+    $('#habitCategoria').value = habito.cat;
+    $('#habitEmoji').value = habito.em;
+    $('#habitXp').value = habito.xp;
+  } else {
+    $('#habitModalTitle').textContent = 'Novo hábito';
+    $('#habitModalSubmit').textContent = 'Adicionar hábito';
+    $('#habitEmoji').value = '✅';
+    $('#habitXp').value = 10;
+  }
   $('#habitModalOverlay').classList.add('on');
   $('#habitNome').focus();
 }
 function closeHabitModal(){
   $('#habitModalOverlay').classList.remove('on');
+  habitoEditando = null;
 }
-$('#newHabit').addEventListener('click', openHabitModal);
+$('#newHabit').addEventListener('click', () => openHabitModal());
 $('#habitModalCancel').addEventListener('click', closeHabitModal);
 $('#habitModalOverlay').addEventListener('click', e => { if(e.target === $('#habitModalOverlay')) closeHabitModal(); });
 $('#habitForm').addEventListener('submit', async e => {
@@ -1179,19 +1219,31 @@ $('#habitForm').addEventListener('submit', async e => {
   const nome = $('#habitNome').value.trim();
   if(!nome) return;
   const submitBtn = $('#habitModalSubmit');
-  submitBtn.disabled = true; submitBtn.textContent = 'Adicionando…';
-  const { data, error } = await supabase.from('habits').insert({
+  const payload = {
     nome,
     categoria: $('#habitCategoria').value,
     emoji: $('#habitEmoji').value.trim() || '✅',
     xp: Math.max(1, +$('#habitXp').value || 10),
-  }).select().single();
-  submitBtn.disabled = false; submitBtn.textContent = 'Adicionar hábito';
-  if(error){ toast('Não foi possível salvar o hábito.'); return; }
-  habits.push(rowToHabit(data));
-  aplicarEstatisticasHabitos();
-  closeHabitModal();
-  toast(`${nome} adicionado aos seus hábitos.`);
+  };
+  if(habitoEditando){
+    submitBtn.disabled = true; submitBtn.textContent = 'Salvando…';
+    const { error } = await supabase.from('habits').update(payload).eq('id', habitoEditando.id);
+    submitBtn.disabled = false; submitBtn.textContent = 'Salvar alterações';
+    if(error){ toast('Não foi possível salvar as alterações.'); return; }
+    Object.assign(habitoEditando, {nome: payload.nome, cat: payload.categoria, em: payload.emoji, xp: payload.xp});
+    aplicarEstatisticasHabitos();
+    closeHabitModal();
+    toast(`${nome} atualizado.`);
+  } else {
+    submitBtn.disabled = true; submitBtn.textContent = 'Adicionando…';
+    const { data, error } = await supabase.from('habits').insert(payload).select().single();
+    submitBtn.disabled = false; submitBtn.textContent = 'Adicionar hábito';
+    if(error){ toast('Não foi possível salvar o hábito.'); return; }
+    habits.push(rowToHabit(data));
+    aplicarEstatisticasHabitos();
+    closeHabitModal();
+    toast(`${nome} adicionado aos seus hábitos.`);
+  }
 });
 
 async function marcarHabitoNoDia(habitId, data, marcar){
@@ -1271,6 +1323,10 @@ function renderGoals(){
         <div style="display:flex;color:var(--muted);font-size:12.5px"><span>${pc}% concluído</span><span style="margin-left:auto">Prazo: ${m.prazo}</span></div>
       </div>`;
     }).join('');
+  $('#metasAtivas').textContent = metas.filter(m => m.at < m.alvo).length;
+  $('#metasConcluidas').textContent = metas.filter(m => m.at >= m.alvo).length;
+  const fimAno = new Date(new Date().getFullYear(), 11, 31);
+  $('#diasFimAno').textContent = Math.max(0, Math.ceil((fimAno - new Date()) / 86400000));
   renderProxMeta();
   if(typeof renderConquistas === 'function') renderConquistas();
   if(typeof renderNotifications === 'function') renderNotifications();
@@ -1678,15 +1734,12 @@ document.addEventListener('click', async e => {
 
 /* ===================== LOJA ===================== */
 function updateCoins(){ $('#coinTop').textContent = coins; $('#coinShop').textContent = coins; renderShop(); }
-function jaTem(it){ return it.avatarSlug && (profile?.avatares_desbloqueados || []).includes(it.avatarSlug); }
 function renderShop(){
   $('#shopGrid').innerHTML = loja.map((it,i) => {
-    const possuido = jaTem(it);
-    const podeComprar = !possuido && coins >= it.preco;
-    const label = possuido ? 'Você já tem' : coins >= it.preco ? 'Comprar' : 'Moedas insuficientes';
-    const avatar = it.avatarSlug && AVATARES.find(a => a.slug === it.avatarSlug);
+    const podeComprar = coins >= it.preco;
+    const label = podeComprar ? 'Comprar' : 'Moedas insuficientes';
     return `<div class="card shop">
-      <div class="art" style="background:${it.bg}">${avatar ? `<img src="${avatar.img}" alt="${avatar.nome}" style="width:56px;height:56px;border-radius:50%;object-fit:cover">` : it.em}</div>
+      <div class="art" style="background:${it.bg}">${it.img ? `<img src="${it.img}" alt="${it.nome}" style="width:56px;height:56px;border-radius:50%;object-fit:cover">` : it.em}</div>
       <h4>${it.nome}</h4>
       <p>${it.desc}</p>
       <div class="buy">
@@ -1699,14 +1752,7 @@ function renderShop(){
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-buy]'); if(!b) return;
   const it = loja[+b.dataset.buy];
-  if(jaTem(it) || coins < it.preco) return;
-  if(it.avatarSlug){
-    const desbloqueados = [...(profile?.avatares_desbloqueados || []), it.avatarSlug];
-    const { error } = await supabase.from('profiles').update({avatares_desbloqueados: desbloqueados}).eq('id', currentUser.id);
-    if(error){ toast('Não foi possível concluir a compra.'); return; }
-    if(profile) profile.avatares_desbloqueados = desbloqueados;
-    if(typeof renderAvatarPicker === 'function') renderAvatarPicker();
-  }
+  if(coins < it.preco) return;
   coins -= it.preco; updateCoins(); syncCoins();
   if(profile){
     profile.moedas_gastas = (profile.moedas_gastas || 0) + it.preco;
@@ -1734,20 +1780,14 @@ $('#configNome').addEventListener('change', async e => {
 });
 
 function renderAvatarPicker(){
-  const desbloqueados = new Set(profile?.avatares_desbloqueados || []);
-  AVATARES.forEach(a => { if(a.raridade === 'comum') desbloqueados.add(a.slug); });
   const escolhido = profile?.avatar_escolhido;
   const nenhumBtn = `<button type="button" class="avatar-opt ${!escolhido?'ativo':''}" data-avatar="" title="Usar foto do Google ou iniciais">
       <span class="avatar-opt-img" style="display:grid;place-items:center;font-size:22px;color:var(--muted)">🚫</span><span style="font-size:10px;color:var(--muted)">Nenhum</span>
     </button>`;
   $('#avatarGrid').innerHTML = nenhumBtn + AVATARES.map(a => {
-    const liberado = desbloqueados.has(a.slug);
     const ativo = escolhido === a.slug;
-    return `<button type="button" class="avatar-opt ${ativo?'ativo':''}" data-avatar="${a.slug}" ${liberado?'':'disabled'} title="${a.nome} · ${a.raridade}${liberado?'':' — compre na loja'}">
-      <span class="avatar-opt-img">
-        <img src="${a.img}" alt="${a.nome}" style="${liberado?'':'filter:grayscale(1);opacity:.35'}">
-        ${liberado ? '' : '<span class=\"avatar-lock\">🔒</span>'}
-      </span>
+    return `<button type="button" class="avatar-opt ${ativo?'ativo':''}" data-avatar="${a.slug}" title="${a.nome} · ${a.raridade}">
+      <span class="avatar-opt-img"><img src="${a.img}" alt="${a.nome}"></span>
       <span style="font-size:10px;color:${RARIDADE_COR[a.raridade]}">${a.nome}</span>
     </button>`;
   }).join('');

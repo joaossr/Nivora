@@ -82,7 +82,9 @@ npx vercel --prod
   você esqueceu de registrar na hora.
 - **+ Novo hábito** e **+ Nova meta** abrem formulários reais que gravam no
   Supabase; marcar/desmarcar hábito, editar um dia no calendário e
-  "Reiniciar dia" sincronizam XP com o perfil do usuário.
+  "Reiniciar dia" sincronizam XP com o perfil do usuário. Cada hábito
+  também pode ser **editado** (nome, categoria, emoji, XP) ou **excluído**
+  (o que apaga também o histórico de conclusões dele) direto no card.
 - **Conquistas com desbloqueio automático**: calculadas a partir do
   progresso real (XP total, streaks, nº de hábitos, dias perfeitos, metas
   concluídas, compras na loja) — sem tabela própria, recalculadas a cada
@@ -94,9 +96,12 @@ npx vercel --prod
 - **Estatísticas e Relatórios reais**: XP por dia da semana, conclusão por
   categoria, melhores hábitos, desempenho semanal — tudo calculado do
   histórico de hábitos do usuário logado, começando zerado para quem é novo.
-- **Avatar**: em Configurações, escolha entre avatares comuns (grátis) ou
-  raros/épicos/lendários desbloqueados comprando na Loja. Quem loga pelo
-  Google usa a foto da conta por padrão, mas pode substituir por um avatar.
+- **Avatar**: em Configurações, escolha livremente entre 10 avatares (9
+  imagens geradas + a coroa em SVG) — todos liberados para qualquer
+  usuário, sem custo. Quem loga pelo Google usa a foto da conta por
+  padrão, mas pode substituir por um avatar.
+- **Favicon**: usa a mesma logo "N" do app (extraída do base64 embutido em
+  `login.html`), em `public/favicon.png` e `public/apple-touch-icon.png`.
 - **Frases motivacionais dinâmicas**: a frase no card inferior da página
   "Hoje" muda conforme o progresso do dia, sequência atual e taxa de
   conclusão do usuário (10 variações).
@@ -113,9 +118,10 @@ npx vercel --prod
 
 - Projeto: **Nivora** (`dtkgomdoraxoyofsiywh`).
 - `public.profiles`: `id` (= `auth.users.id`), `nome`, `avatar_url` (do
-  Google), `avatar_escolhido`, `avatares_desbloqueados` (text[]),
-  `total_xp`, `coins`, `moedas_gastas`. Criado automaticamente por um
-  trigger (`handle_new_user`) quando alguém se cadastra.
+  Google), `avatar_escolhido`, `avatares_desbloqueados` (coluna legada, não
+  usada mais — os avatares deixaram de ser vendidos na Loja), `total_xp`,
+  `coins`, `moedas_gastas`. Criado automaticamente por um trigger
+  (`handle_new_user`) quando alguém se cadastra.
 - `public.habits`: hábitos cadastrados (`nome`, `categoria`, `emoji`, `xp`).
 - `public.habit_logs`: uma linha por `(habit_id, data)` — o histórico real
   de conclusões, base de streaks, taxas, calendário, estatísticas e
@@ -155,9 +161,19 @@ Isso **não** dá para ser feito por código — precisa ser feito uma vez no
    desenvolvimento, isso pode ser desativado em
    *Authentication → Sign In / Providers → Email*.
 
+## Loja
+
+A Loja troca moedas por recompensas — uma mistura de vantagens no app
+(congelar sequência, XP em dobro, temas, relatórios avançados, slot de meta
+extra) e recompensas da vida real que o usuário se dá por progredir (açaí,
+lanche, tempo livre, sair, iFood, recompensa premium, comprar algo que
+quiser). As recompensas "da vida real" são apenas simbólicas: comprá-las só
+desconta moedas e conta para a conquista "Primeira compra" — não há nenhum
+efeito automático no app (é o próprio usuário que se recompensa depois).
+
 ## Próximos passos possíveis
 
-- Persistir os itens comprados na Loja que não são avatares (temas, "XP em
-  dobro", "congelar sequência" etc. ainda não têm efeito real).
+- Persistir os itens comprados na Loja que dão efeito dentro do app (temas,
+  "XP em dobro", "congelar sequência" etc. ainda não têm efeito real).
 - Login com Apple de verdade (hoje o botão é só uma demonstração).
 - Separar CSS/JS dos arquivos HTML se o projeto crescer.
