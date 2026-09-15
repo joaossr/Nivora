@@ -123,6 +123,7 @@ input,select{font-family:inherit}
 .page-head p{color:var(--muted);font-size:13.5px;margin-top:4px}
 .page-head .btn{margin-left:auto}
 .tag{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+button.tag:hover{border-color:var(--line-2);background:var(--card)}
 .cols{display:grid;gap:18px}
 .c2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .c3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -961,10 +962,10 @@ async function recalcularMeta(goalId){
   const meta = metas.find(m => m.id === goalId);
   if(!meta) return;
   const links = habitosVinculadosA(goalId);
-  if(links.length){
-    const soma = links.reduce((s, link) => s + (habitLogs.get(link.habit_id)?.size || 0) * Number(link.incremento), 0);
-    meta.at = Math.round(soma * 100) / 100;
-  }
+  if(!links.length) return; // sem hábito vinculado: progresso e checkpoints são manuais, nada a recalcular
+
+  const soma = links.reduce((s, link) => s + (habitLogs.get(link.habit_id)?.size || 0) * Number(link.incremento), 0);
+  meta.at = Math.round(soma * 100) / 100;
 
   const jaConcluida = !!meta.concluidaEm;
   const agoraConcluida = meta.alvo > 0 && meta.at >= meta.alvo;
@@ -1500,7 +1501,13 @@ function renderGoals(){
           <i style="width:${pc}%"></i>
           ${cps.map(cp => `<div class="checkpoint-marker ${cp.atingido?'atingido':''}" style="left:${Math.min(100, cp.valor/m.alvo*100)}%" title="${cp.rotulo ? cp.rotulo + ' — ' : ''}${formatNum(cp.valor)} ${m.un}${cp.atingido?' · alcançado':''}"></div>`).join('')}
         </div>
-        ${cps.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${cps.map(cp => `<span class="tag" style="font-size:11px;${cp.atingido?'color:#6ee7b7;border-color:rgba(52,211,153,.35)':''}">${cp.atingido?'✓':'○'} ${cp.rotulo ? cp.rotulo : formatNum(cp.valor) + ' ' + m.un}</span>`).join('')}</div>` : ''}
+        ${cps.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${cps.map(cp => {
+          const rotuloTxt = cp.rotulo ? cp.rotulo : formatNum(cp.valor) + ' ' + m.un;
+          const cor = cp.atingido ? 'color:#6ee7b7;border-color:rgba(52,211,153,.35)' : '';
+          return !habitosLigados.length
+            ? `<button type="button" class="tag" data-toggle-cp="${cp.id}" data-goal-cp="${m.id}" style="font-size:11px;cursor:pointer;${cor}" title="Marcar manualmente (meta sem hábito vinculado)">${cp.atingido?'✓':'○'} ${rotuloTxt}</button>`
+            : `<span class="tag" style="font-size:11px;${cor}" title="Desbloqueado automaticamente pelos hábitos vinculados">${cp.atingido?'✓':'○'} ${rotuloTxt}</span>`;
+        }).join('')}</div>` : ''}
         <div style="display:flex;color:var(--muted);font-size:12.5px">
           <span>${concluida ? '🏆 Concluída' : pc + '% concluído'}</span><span style="margin-left:auto">Prazo: ${m.prazo}</span>
         </div>
@@ -1520,7 +1527,22 @@ $('#goalCards').addEventListener('click', async e => {
   if(editBtn){ openGoalModal(metas.find(m => m.id === editBtn.dataset.editGoal)); return; }
   const delBtn = e.target.closest('[data-delete-goal]');
   if(delBtn){ await excluirMeta(metas.find(m => m.id === delBtn.dataset.deleteGoal)); return; }
+  const cpBtn = e.target.closest('[data-toggle-cp]');
+  if(cpBtn){ await alternarCheckpointManual(cpBtn.dataset.toggleCp, cpBtn.dataset.goalCp); return; }
 });
+/* Marca/desmarca um checkpoint à mão — só é permitido em metas sem hábito vinculado (progresso não é automático nelas). */
+async function alternarCheckpointManual(checkpointId, goalId){
+  if(habitosVinculadosA(goalId).length){ toast('Essa meta tem hábitos vinculados — o checkpoint é automático.'); return; }
+  const cp = goalCheckpoints.find(c => c.id === checkpointId);
+  if(!cp) return;
+  const novoValor = !cp.atingido;
+  const atingido_em = novoValor ? new Date().toISOString() : null;
+  const { error } = await supabase.from('goal_checkpoints').update({atingido: novoValor, atingido_em}).eq('id', checkpointId);
+  if(error){ toast('Não foi possível salvar o checkpoint.'); return; }
+  cp.atingido = novoValor;
+  cp.atingido_em = atingido_em;
+  renderGoals();
+}
 async function excluirMeta(m){
   if(!confirm(`Excluir a meta "${m.nome}"? Isso também remove os vínculos com hábitos e os checkpoints dela.`)) return;
   const { error } = await supabase.from('goals').delete().eq('id', m.id);
