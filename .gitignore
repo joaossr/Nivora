@@ -1,0 +1,14 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+.claude/
+*.swp
+
+# Node (caso o projeto passe a usar alguma ferramenta futuramente)
+node_modules/
+dist/
+.env
