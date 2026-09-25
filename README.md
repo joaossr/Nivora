@@ -111,10 +111,22 @@ npx vercel --prod
   progresso real (XP total, streaks, nº de hábitos, dias perfeitos, metas
   concluídas, compras na loja) — sem tabela própria, recalculadas a cada
   carregamento.
-- **Missões genéricas e persistidas**: diárias e semanais que funcionam com
-  qualquer hábito cadastrado (não citam hábitos específicos). Cada resgate
-  grava uma linha em `mission_claims`, então não dá para resgatar duas
-  vezes a mesma missão no mesmo dia/semana.
+- **Missões dinâmicas**: um banco de dezenas de missões (diárias, semanais,
+  especiais por dia da semana, "Desafio da semana" e surpresas raras) do
+  qual o app sorteia, todo dia/semana, um conjunto de 4 a 6 — de forma
+  determinística (mesmo `usuário + data` sempre gera o mesmo sorteio, sem
+  precisar guardar nada extra no banco) e evitando repetir o conjunto do
+  dia/semana anterior. Algumas missões são geradas a partir dos hábitos
+  reais do usuário (ex.: hábito "Estudar Python" vira "💻 Complete seu
+  hábito de Python hoje"), e outras só aparecem se o usuário tiver hábitos
+  numa certa categoria (Saúde/Estudos/Pessoal). **Moedas só existem via
+  missão resgatada** — completar um hábito nunca dá moeda diretamente, só
+  XP. Cada resgate grava uma linha em `mission_claims` (usada tanto para
+  não deixar resgatar duas vezes quanto para o cooldown de cada missão);
+  toda a lógica de seleção/rotação vive em `index.html` perto do banco de
+  missões, isolada do resto do app — adicionar uma missão nova é só
+  acrescentar um objeto num dos bancos (`BANCO_DIARIAS`, `BANCO_SEMANAIS`,
+  `BANCO_DESAFIO`, `BANCO_SURPRESA` ou `MISSOES_DIA_ESPECIAL`).
 - **Estatísticas e Relatórios reais**: XP por dia da semana, conclusão por
   categoria, melhores hábitos, desempenho semanal — tudo calculado do
   histórico de hábitos do usuário logado, começando zerado para quem é novo.
@@ -158,6 +170,9 @@ npx vercel --prod
   junto com o progresso.
 - `public.mission_claims`: uma linha por `(mission_key, period_key)`
   resgatado — evita resgatar a mesma missão duas vezes no período.
+- `public.reward_redemptions`: uma linha por resgate de item da Loja
+  (`reward_key`, `period_key`) — usada pra contar quantas vezes cada
+  recompensa foi usada dentro do período atual e aplicar o `usageLimit`.
 - RLS em todas as tabelas: cada usuário só enxerga e altera as próprias
   linhas (`*_select_own`, `*_insert_own`, etc.), com `user_id default auth.uid()`.
 - `@supabase/ssr` está instalado nas dependências (era um requisito do
@@ -192,15 +207,27 @@ Isso **não** dá para ser feito por código — precisa ser feito uma vez no
 
 ## Loja
 
-A Loja troca moedas por recompensas — uma mistura de vantagens no app
-(congelar sequência, XP em dobro, temas, relatórios avançados, slot de meta
-extra) e recompensas da vida real que o usuário se dá por progredir (doce
-ou lanche favorito, pedir comida, tarde de descanso, sair para se divertir,
-recompensa premium, comprar algo que quiser). Cada item tem uma imagem
-própria (`public/rewards/*.svg`) que ocupa o card inteiro, não só um ícone
-no meio. As recompensas "da vida real" são apenas simbólicas: comprá-las só
-desconta moedas e conta para a conquista "Primeira compra" — não há nenhum
-efeito automático no app (é o próprio usuário que se recompensa depois).
+A Loja é uma **economia de recompensa pessoal**: as 23 recompensas estão
+organizadas em 5 categorias (Sistema, Lazer, Guitarra e hobbies, Comida,
+Compras pessoais), com preços de 60 a 1.000 moedas — de propósito, a maioria
+fica acima de 200 moedas, pra recompensas maiores exigirem várias semanas de
+acumulação. Cada item tem `raridade` (comum/raro/épico/lendário, com as
+mesmas cores dos avatares) e um limite de uso modular:
+`usageLimit` (quantas vezes) + `usagePeriod` (`'week'`, `'month'`, `'once'`
+ou `'N_months'`, ex. `'2_months'`). Toda recompensa resgatada grava uma
+linha em `reward_redemptions` (`reward_key` + `period_key`, esse último
+calculado a partir do `usagePeriod` — ex. a segunda-feira da semana atual,
+ou `"2026-1m8"` pra um item mensal em setembro/2026); ao atingir o limite no
+período atual, o botão vira "🔒 Limite atingido" (ou "🔒 Já resgatado" nas
+recompensas de compra única) mostrando a data em que libera de novo. Cada
+item tem uma imagem própria (`public/rewards/*.svg`) que ocupa o card
+inteiro. Adicionar uma recompensa nova é só empurrar um objeto no array
+`loja` (nome, descrição, preço, categoria, raridade, `usageLimit`,
+`usagePeriod`, imagem) — o motor de limites não muda. As recompensas "da
+vida real" são simbólicas: resgatá-las só desconta moedas e conta para a
+conquista "Primeira compra" — não há efeito automático no app (é o próprio
+usuário que se recompensa depois). **Moedas continuam vindo exclusivamente
+do resgate de missões** — hábitos nunca dão moeda diretamente, só XP.
 
 ## Próximos passos possíveis
 

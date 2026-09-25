@@ -693,12 +693,16 @@ select,input[type=text],input[type=time],input[type=number],input[type=date]{bac
     <!-- ============ MISSÕES ============ -->
     <section class="page" id="page-missoes">
       <div class="page-head">
-        <div><h2>Missões</h2><p>Desafios que rendem XP e moedas extras.</p></div>
+        <div><h2>Missões</h2><p>Um conjunto novo de desafios todo dia — sua única fonte de moedas.</p></div>
         <span class="tag" style="margin-left:auto">🪙 recompensas vão para a Loja</span>
       </div>
       <div class="card pad" style="margin-bottom:18px">
         <div class="card-h"><h3>Missões diárias</h3><span class="tag" style="margin-left:auto" id="renovaDia">renova à meia-noite</span></div>
         <div id="dailyMissions"></div>
+      </div>
+      <div class="card pad" style="margin-bottom:18px" id="desafioSemanaCard">
+        <div class="card-h"><h3>🏆 Desafio da semana</h3></div>
+        <div id="desafioSemana"></div>
       </div>
       <div class="card pad">
         <div class="card-h"><h3>Missões semanais</h3><span class="tag" style="margin-left:auto" id="renovaSemana">renova domingo</span></div>
@@ -709,10 +713,9 @@ select,input[type=text],input[type=time],input[type=number],input[type=date]{bac
     <!-- ============ LOJA ============ -->
     <section class="page" id="page-loja">
       <div class="page-head">
-        <div><h2>Loja</h2><p>Troque as moedas que você ganhou completando hábitos.</p></div>
         <div class="coins" style="margin-left:auto">🪙 <span id="coinShop">0</span> moedas</div>
       </div>
-      <div class="cols c4" id="shopGrid"></div>
+      <div id="shopGrid"></div>
     </section>
 
     <!-- ============ CONFIGURAÇÕES ============ -->
@@ -1107,17 +1110,224 @@ const conquistas = [
   {em:'🛍️', nome:'Primeira compra',      desc:'Troque moedas por algo na loja.',         chave:'primeiraCompra'},
 ];
 
-/* Missões genéricas: não dependem de nenhum hábito específico, funcionam com qualquer hábito cadastrado. */
-const MISSOES_DIA = [
-  {chave:'d_um_habito',   em:'✅', nome:'Conclua 1 hábito hoje',        desc:'Vale qualquer hábito.',            alvo:1,  xp:10, moedas:8,  calcAt:() => habits.filter(h => h.done).length},
-  {chave:'d_tres_habitos',em:'🔥', nome:'Conclua 3 hábitos hoje',        desc:'Combine quantos quiser.',          alvo:3,  xp:20, moedas:15, calcAt:() => habits.filter(h => h.done).length},
-  {chave:'d_cedo',        em:'🌅', nome:'Registre um hábito antes das 9h', desc:'Comece o dia cedo.',              alvo:1,  xp:10, moedas:5,  calcAt:() => habitLogRows.some(r => r.data === hojeStr() && new Date(r.created_at).getHours() < 9) ? 1 : 0},
+/* ============================================================
+   BANCO DE MISSÕES — sistema dinâmico
+   Cada missão é só dados + uma função calcAt(ctx) que lê o estado
+   real do app. Adicionar uma missão nova é só empurrar um objeto
+   num desses bancos — nada mais no motor de seleção/render precisa mudar.
+   ============================================================ */
+
+/* Tetos reutilizáveis: o quanto de xp/hábitos é fisicamente possível alcançar,
+   dado o que o usuário tem cadastrado hoje — evita sortear uma missão inatingível
+   (ex.: "ganhe 75 XP" pra quem só consegue 50 XP com os hábitos que tem). */
+const maxHabitosHoje = ctx => ctx.totalHabitosCadastrados;
+const maxXpHoje = ctx => ctx.xpMaximoPossivelHoje;
+const maxHabitosSemana = ctx => ctx.totalHabitosCadastrados * 7;
+const maxXpSemana = ctx => ctx.xpMaximoPossivelHoje * 7;
+
+/* pool geral de diárias (sempre elegíveis, sujeitas a categoria/cooldown) */
+const BANCO_DIARIAS = [
+  {chave:'d_qtd_1', em:'✅', nome:'Complete 1 hábito hoje', desc:'Vale qualquer hábito.', alvo:1, moedas:8,  dificuldade:'facil',   peso:3, cooldown:1, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+  {chave:'d_qtd_2', em:'✅', nome:'Complete 2 hábitos hoje', desc:'Combine quantos quiser.', alvo:2, moedas:12, dificuldade:'facil',   peso:3, cooldown:1, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+  {chave:'d_qtd_3', em:'🔥', nome:'Complete 3 hábitos hoje', desc:'Combine quantos quiser.', alvo:3, moedas:15, dificuldade:'normal',  peso:3, cooldown:1, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+  {chave:'d_qtd_4', em:'🔥', nome:'Complete 4 hábitos hoje', desc:'Um dia bem completo.', alvo:4, moedas:20, dificuldade:'normal',  peso:2, cooldown:1, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+  {chave:'d_qtd_5', em:'💪', nome:'Complete 5 hábitos hoje', desc:'Dia impecável.', alvo:5, moedas:25, dificuldade:'dificil', peso:1, cooldown:2, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+
+  {chave:'d_xp_20', em:'⭐', nome:'Ganhe 20 XP hoje', desc:'Some o XP dos hábitos concluídos hoje.', alvo:20, moedas:8,  dificuldade:'facil',  peso:3, cooldown:1, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje},
+  {chave:'d_xp_30', em:'⭐', nome:'Ganhe 30 XP hoje', desc:'Some o XP dos hábitos concluídos hoje.', alvo:30, moedas:10, dificuldade:'facil',  peso:3, cooldown:1, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje},
+  {chave:'d_xp_50', em:'🌟', nome:'Ganhe 50 XP hoje', desc:'Some o XP dos hábitos concluídos hoje.', alvo:50, moedas:15, dificuldade:'normal', peso:2, cooldown:1, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje},
+  {chave:'d_xp_75', em:'🌟', nome:'Ganhe 75 XP hoje', desc:'Um dia de muito XP.', alvo:75, moedas:20, dificuldade:'normal', peso:1, cooldown:2, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje},
+
+  {chave:'d_cedo_8',  em:'🌅', nome:'Registre um hábito antes das 8h',  desc:'Comece o dia bem cedo.', alvo:1, moedas:10, dificuldade:'normal', peso:2, cooldown:1, calcAt:ctx=>ctx.antesDasHoras(8)?1:0},
+  {chave:'d_cedo_9',  em:'🌅', nome:'Registre um hábito antes das 9h',  desc:'Comece o dia cedo.',     alvo:1, moedas:8,  dificuldade:'facil',  peso:2, cooldown:1, calcAt:ctx=>ctx.antesDasHoras(9)?1:0},
+  {chave:'d_cedo_10', em:'🌤️', nome:'Registre um hábito antes das 10h', desc:'Sem pressa, mas sem atraso.', alvo:1, moedas:5,  dificuldade:'facil', peso:2, cooldown:1, calcAt:ctx=>ctx.antesDasHoras(10)?1:0},
+
+  {chave:'d_seq_1', em:'🔥', nome:'Mantenha sua sequência hoje',       desc:'Complete pelo menos um hábito.', alvo:1, moedas:10, dificuldade:'facil',  peso:2, cooldown:1, calcAt:ctx=>ctx.sequenciaGeral},
+  {chave:'d_seq_2', em:'🔥', nome:'Complete hábitos 2 dias seguidos',  desc:'Hoje e ontem.',                  alvo:2, moedas:15, dificuldade:'normal', peso:1, cooldown:2, calcAt:ctx=>ctx.sequenciaGeral},
+  {chave:'d_seq_3', em:'🔥', nome:'Complete hábitos 3 dias seguidos',  desc:'Três dias de consistência.',     alvo:3, moedas:20, dificuldade:'normal', peso:1, cooldown:3, calcAt:ctx=>ctx.sequenciaGeral},
+
+  {chave:'d_cat_saude',   em:'💪', nome:'Complete um hábito de Saúde hoje',   desc:'Cuide do corpo.',              alvo:1, moedas:10, dificuldade:'facil', peso:2, cooldown:1, categoriaAlvo:'Saúde',   calcAt:ctx=>ctx.catHoje['Saúde']||0},
+  {chave:'d_cat_estudos', em:'📚', nome:'Complete um hábito de Estudos hoje', desc:'Invista no seu conhecimento.', alvo:1, moedas:10, dificuldade:'facil', peso:2, cooldown:1, categoriaAlvo:'Estudos', calcAt:ctx=>ctx.catHoje['Estudos']||0},
+  {chave:'d_cat_pessoal', em:'🌱', nome:'Complete um hábito Pessoal hoje',    desc:'Um cuidado só seu.',           alvo:1, moedas:10, dificuldade:'facil', peso:2, cooldown:1, categoriaAlvo:'Pessoal', calcAt:ctx=>ctx.catHoje['Pessoal']||0},
 ];
-const MISSOES_SEMANA = [
-  {chave:'w_cinco_dias',  em:'🗓️', nome:'Conclua hábitos em 5 dias esta semana', desc:'Não precisa ser o mesmo hábito.', alvo:5,   xp:50, moedas:40, calcAt:() => new Set(habitLogRows.filter(r => r.data >= dateStr(segundaDe(new Date())) && r.data <= hojeStr()).map(r => r.data)).size},
-  {chave:'w_cem_xp',      em:'⭐', nome:'Ganhe 100 XP esta semana',      desc:'Some o XP de todos os hábitos.',   alvo:100, xp:40, moedas:35, calcAt:() => statsSemana(segundaDe(new Date())).xp},
-  {chave:'w_dez_habitos', em:'📈', nome:'Conclua 10 hábitos esta semana', desc:'Some todas as conclusões da semana.', alvo:10, xp:60, moedas:50, calcAt:() => statsSemana(segundaDe(new Date())).concluidos},
+
+/* missões surpresa: entram na roleta do dia com uma chance baixa, não todo dia */
+const BANCO_SURPRESA = [
+  {chave:'surpresa_3habitos', em:'🎁', nome:'Missão surpresa: complete 3 hábitos hoje', desc:'Apareceu do nada!', alvo:3, moedas:25, dificuldade:'normal', cooldown:4, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+  {chave:'surpresa_xp40',     em:'🎁', nome:'Missão surpresa: ganhe 40 XP hoje',        desc:'Bônus de hoje.',    alvo:40, moedas:20, dificuldade:'normal', cooldown:4, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje},
+  {chave:'surpresa_seq7',     em:'🎁', nome:'Você está perto de uma sequência de 7 dias', desc:'Continue firme.', alvo:7, moedas:40, dificuldade:'normal', cooldown:6, calcAt:ctx=>ctx.sequenciaGeral, elegivelExtra:ctx=>ctx.sequenciaGeral>=4 && ctx.sequenciaGeral<7},
 ];
+
+/* missões especiais de cada dia da semana — chave em Date#getDay() (0=domingo..6=sábado) */
+const MISSOES_DIA_ESPECIAL = {
+  1: [ {chave:'esp_seg_3habitos', em:'🚀', nome:'Comece a semana completando 3 hábitos', desc:'Dê o tom da semana.', alvo:3,  moedas:20, dificuldade:'normal', peso:6, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+       {chave:'esp_seg_40xp',     em:'⭐', nome:'Ganhe 40 XP hoje',                       desc:'Comece forte.',       alvo:40, moedas:12, dificuldade:'facil',  peso:5, cooldown:5, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje} ],
+  2: [ {chave:'esp_ter_3habitos', em:'🔥', nome:'Complete 3 hábitos', desc:'Mantenha o ritmo.', alvo:3, moedas:15, dificuldade:'normal', peso:6, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+       {chave:'esp_ter_cedo9',    em:'🌅', nome:'Complete um hábito antes das 9h', desc:'Terça produtiva.', alvo:1, moedas:8, dificuldade:'facil', peso:5, cooldown:5, calcAt:ctx=>ctx.antesDasHoras(9)?1:0} ],
+  3: [ {chave:'esp_qua_4habitos', em:'🔥', nome:'Complete 4 hábitos', desc:'Meio da semana com força.', alvo:4, moedas:20, dificuldade:'normal', peso:6, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+       {chave:'esp_qua_50xp',     em:'🌟', nome:'Ganhe 50 XP', desc:'Suba o nível hoje.', alvo:50, moedas:15, dificuldade:'normal', peso:5, cooldown:5, maximoPossivel:maxXpHoje, calcAt:ctx=>ctx.xpHoje} ],
+  4: [ {chave:'esp_qui_3habitos', em:'🔥', nome:'Complete 3 hábitos', desc:'Reta final da semana.', alvo:3, moedas:15, dificuldade:'normal', peso:6, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+       {chave:'esp_qui_sequencia',em:'🔥', nome:'Mantenha sua sequência', desc:'Não pare agora.', alvo:1, moedas:15, dificuldade:'normal', peso:5, cooldown:5, calcAt:ctx=>ctx.sequenciaGeral} ],
+  5: [ {chave:'esp_sex_5dias',    em:'🏁', nome:'Complete hábitos durante 5 dias da semana', desc:'Feche a semana com chave de ouro.', alvo:5, moedas:30, dificuldade:'dificil', peso:6, cooldown:5, calcAt:ctx=>ctx.diasAtivosSemana},
+       {chave:'esp_sex_3habitos', em:'🔥', nome:'Complete 3 hábitos', desc:'Sexta produtiva.', alvo:3, moedas:15, dificuldade:'normal', peso:5, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje} ],
+  6: [ {chave:'esp_sab_2habitos', em:'☀️', nome:'Complete 2 hábitos', desc:'Fim de semana também conta.', alvo:2, moedas:12, dificuldade:'facil', peso:6, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+       {chave:'esp_sab_pessoal',  em:'🎨', nome:'Complete um hábito Pessoal hoje', desc:'Aproveite o sábado.', alvo:1, moedas:10, dificuldade:'facil', peso:5, cooldown:5, categoriaAlvo:'Pessoal', calcAt:ctx=>ctx.catHoje['Pessoal']||0} ],
+  0: [ {chave:'esp_dom_3habitos', em:'🌤️', nome:'Complete 3 hábitos', desc:'Prepare-se pra semana.', alvo:3, moedas:15, dificuldade:'normal', peso:6, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.concluidosHoje},
+       {chave:'esp_dom_estudo',   em:'📚', nome:'Complete um hábito de Estudos hoje', desc:'Revisar não faz mal.', alvo:1, moedas:10, dificuldade:'facil', peso:5, cooldown:5, categoriaAlvo:'Estudos', calcAt:ctx=>ctx.catHoje['Estudos']||0},
+       {chave:'esp_dom_sequencia',em:'🔥', nome:'Mantenha sua sequência', desc:'Termine a semana em alta.', alvo:1, moedas:15, dificuldade:'normal', peso:4, cooldown:5, calcAt:ctx=>ctx.sequenciaGeral} ],
+};
+
+/* pool de semanais — pelo menos 20 diferentes, cobrindo dias ativos, total de hábitos, xp, sequência e combinações */
+const BANCO_SEMANAIS = [
+  {chave:'w_dias_3', em:'🗓️', nome:'Complete hábitos em 3 dias esta semana', desc:'Não precisa ser o mesmo hábito.', alvo:3, moedas:20, dificuldade:'facil',   peso:2, cooldown:5,  calcAt:ctx=>ctx.diasAtivosSemana},
+  {chave:'w_dias_4', em:'🗓️', nome:'Complete hábitos em 4 dias esta semana', desc:'Não precisa ser o mesmo hábito.', alvo:4, moedas:30, dificuldade:'normal',  peso:3, cooldown:5,  calcAt:ctx=>ctx.diasAtivosSemana},
+  {chave:'w_dias_5', em:'🗓️', nome:'Complete hábitos em 5 dias esta semana', desc:'Quase a semana toda.',            alvo:5, moedas:50, dificuldade:'normal',  peso:3, cooldown:5,  calcAt:ctx=>ctx.diasAtivosSemana},
+  {chave:'w_dias_6', em:'🗓️', nome:'Complete hábitos em 6 dias esta semana', desc:'Praticamente a semana inteira.',  alvo:6, moedas:70, dificuldade:'dificil', peso:2, cooldown:7,  calcAt:ctx=>ctx.diasAtivosSemana},
+  {chave:'w_dias_7', em:'🏅', nome:'Complete hábitos todos os 7 dias',       desc:'Semana perfeita.',                alvo:7, moedas:100,dificuldade:'dificil', peso:1, cooldown:10, calcAt:ctx=>ctx.diasAtivosSemana},
+
+  {chave:'w_total_5',  em:'📈', nome:'Complete 5 hábitos esta semana',  desc:'Some todas as conclusões.', alvo:5,  moedas:25, dificuldade:'facil',   peso:2, cooldown:5,  maximoPossivel:maxHabitosSemana, calcAt:ctx=>ctx.totalHabitosSemana},
+  {chave:'w_total_10', em:'📈', nome:'Complete 10 hábitos esta semana', desc:'Some todas as conclusões.', alvo:10, moedas:40, dificuldade:'normal',  peso:3, cooldown:5,  maximoPossivel:maxHabitosSemana, calcAt:ctx=>ctx.totalHabitosSemana},
+  {chave:'w_total_15', em:'📈', nome:'Complete 15 hábitos esta semana', desc:'Ritmo forte.',              alvo:15, moedas:60, dificuldade:'normal',  peso:2, cooldown:7,  maximoPossivel:maxHabitosSemana, calcAt:ctx=>ctx.totalHabitosSemana},
+  {chave:'w_total_20', em:'📈', nome:'Complete 20 hábitos esta semana', desc:'Semana muito produtiva.',   alvo:20, moedas:80, dificuldade:'dificil', peso:1, cooldown:7,  maximoPossivel:maxHabitosSemana, calcAt:ctx=>ctx.totalHabitosSemana},
+  {chave:'w_total_25', em:'📈', nome:'Complete 25 hábitos esta semana', desc:'Nível avançado.',           alvo:25, moedas:100,dificuldade:'dificil', peso:1, cooldown:10, maximoPossivel:maxHabitosSemana, calcAt:ctx=>ctx.totalHabitosSemana},
+
+  {chave:'w_xp_50',  em:'⭐', nome:'Ganhe 50 XP esta semana',  desc:'Some o XP de todos os hábitos.', alvo:50,  moedas:20, dificuldade:'facil',   peso:2, cooldown:5,  maximoPossivel:maxXpSemana, calcAt:ctx=>ctx.xpSemana},
+  {chave:'w_xp_100', em:'⭐', nome:'Ganhe 100 XP esta semana', desc:'Some o XP de todos os hábitos.', alvo:100, moedas:35, dificuldade:'normal',  peso:3, cooldown:5,  maximoPossivel:maxXpSemana, calcAt:ctx=>ctx.xpSemana},
+  {chave:'w_xp_150', em:'🌟', nome:'Ganhe 150 XP esta semana', desc:'Boa semana de XP.',              alvo:150, moedas:50, dificuldade:'normal',  peso:2, cooldown:7,  maximoPossivel:maxXpSemana, calcAt:ctx=>ctx.xpSemana},
+  {chave:'w_xp_200', em:'🌟', nome:'Ganhe 200 XP esta semana', desc:'Semana muito forte.',            alvo:200, moedas:70, dificuldade:'dificil', peso:1, cooldown:7,  maximoPossivel:maxXpSemana, calcAt:ctx=>ctx.xpSemana},
+  {chave:'w_xp_300', em:'🌟', nome:'Ganhe 300 XP esta semana', desc:'Nível avançado.',                alvo:300, moedas:100,dificuldade:'dificil', peso:1, cooldown:10, maximoPossivel:maxXpSemana, calcAt:ctx=>ctx.xpSemana},
+
+  {chave:'w_seq_3', em:'🔥', nome:'Mantenha uma sequência de 3 dias', desc:'Consistência de verdade.',       alvo:3, moedas:30, dificuldade:'facil',   peso:2, cooldown:5,  calcAt:ctx=>ctx.sequenciaGeral},
+  {chave:'w_seq_5', em:'🔥', nome:'Mantenha uma sequência de 5 dias', desc:'Consistência de verdade.',       alvo:5, moedas:50, dificuldade:'normal',  peso:2, cooldown:7,  calcAt:ctx=>ctx.sequenciaGeral},
+  {chave:'w_seq_7', em:'🔥', nome:'Mantenha uma sequência de 7 dias', desc:'Uma semana inteira sem falhar.', alvo:7, moedas:80, dificuldade:'dificil', peso:1, cooldown:10, calcAt:ctx=>ctx.sequenciaGeral},
+
+  {chave:'w_3num_dia',   em:'📅', nome:'Complete 3 hábitos em um mesmo dia',    desc:'Em qualquer dia desta semana.',              alvo:3, moedas:20, dificuldade:'facil',  peso:2, cooldown:5, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.maxHabitosUmDia},
+  {chave:'w_3num_3dias', em:'📅', nome:'Faça isso em 3 dias diferentes',        desc:'3 hábitos no mesmo dia, em 3 dias da semana.', alvo:3, moedas:40, dificuldade:'normal', peso:2, cooldown:7, maximoPossivel:maxHabitosHoje, calcAt:ctx=>ctx.diasComPeloMenos3},
+
+  {chave:'w_cat_estudos', em:'📚', nome:'Complete hábitos de Estudos em 3 dias', desc:'Invista no seu conhecimento esta semana.', alvo:3, moedas:35, dificuldade:'normal', peso:2, cooldown:7, categoriaAlvo:'Estudos', calcAt:ctx=>ctx.diasComCategoriaSemana['Estudos']||0},
+  {chave:'w_cat_saude',   em:'💪', nome:'Complete hábitos de Saúde em 3 dias',   desc:'Cuide do corpo esta semana.',              alvo:3, moedas:35, dificuldade:'normal', peso:2, cooldown:7, categoriaAlvo:'Saúde',   calcAt:ctx=>ctx.diasComCategoriaSemana['Saúde']||0},
+];
+
+/* desafio da semana — um só, mais difícil, muda toda semana */
+const BANCO_DESAFIO = [
+  {chave:'desafio_dias6', em:'🏆', nome:'Desafio da semana: hábitos em 6 dias', desc:'O grande desafio desta semana.', alvo:6,   moedas:80,  dificuldade:'desafio', calcAt:ctx=>ctx.diasAtivosSemana},
+  {chave:'desafio_xp250', em:'🏆', nome:'Desafio da semana: 250 XP',           desc:'O grande desafio desta semana.', alvo:250, moedas:100, dificuldade:'desafio', maximoPossivel:maxXpSemana, calcAt:ctx=>ctx.xpSemana},
+  {chave:'desafio_total20',em:'🏆',nome:'Desafio da semana: 20 hábitos',       desc:'O grande desafio desta semana.', alvo:20,  moedas:100, dificuldade:'desafio', maximoPossivel:maxHabitosSemana, calcAt:ctx=>ctx.totalHabitosSemana},
+  {chave:'desafio_seq7',  em:'🏆', nome:'Desafio da semana: sequência de 7 dias', desc:'O grande desafio desta semana.', alvo:7, moedas:120, dificuldade:'desafio', calcAt:ctx=>ctx.sequenciaGeral},
+];
+
+/* personalização: gera missões a partir dos hábitos reais do usuário, por palavra-chave no nome */
+const PERSONALIZACAO_PALAVRAS = [
+  {chaves:['python','programa','codigo','coding','dev'],  em:'💻', nome:h=>`Complete seu hábito de ${h.nome} hoje`},
+  {chaves:['academia','treino','gym','musculacao'],       em:'🏋️', nome:()=>'Complete seu treino hoje'},
+  {chaves:['guitarra','violao'],                          em:'🎸', nome:h=>`Pratique ${h.nome.toLowerCase()} hoje`},
+  {chaves:['ingles','english'],                           em:'🇺🇸', nome:()=>'Complete seu hábito de inglês'},
+  {chaves:['corrida','correr','caminhada'],               em:'🏃', nome:()=>'Complete sua corrida hoje'},
+  {chaves:['leitura','ler ','livro'],                     em:'📖', nome:()=>'Leia um pouco hoje'},
+  {chaves:['medita','yoga'],                              em:'🧘', nome:()=>'Reserve um momento pra você hoje'},
+  {chaves:['agua','beber'],                                em:'💧', nome:()=>'Beba água hoje'},
+];
+function semAcento(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function gerarMissoesPersonalizadas(){
+  const geradas = [];
+  for(const h of habits){
+    const nomeNorm = semAcento(h.nome.toLowerCase());
+    const match = PERSONALIZACAO_PALAVRAS.find(p => p.chaves.some(c => nomeNorm.includes(semAcento(c))));
+    if(!match) continue;
+    geradas.push({
+      chave:`pers_${h.id}`, em:match.em, nome:match.nome(h), desc:`Vale só para "${h.nome}".`,
+      alvo:1, moedas:10, dificuldade:'facil', peso:2, cooldown:2,
+      calcAt: ctx => ctx.logsHoje.some(r => r.habit_id === h.id) ? 1 : 0,
+    });
+  }
+  return geradas;
+}
+
+/* ---- motor de seleção (RNG determinístico por dia/semana — sem precisar guardar nada no banco) ---- */
+function criarRng(seedStr){
+  let a = 0;
+  for(let i = 0; i < seedStr.length; i++) a = (a*31 + seedStr.charCodeAt(i)) >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function sortearSemReposicao(rng, itens, n){
+  const pool = itens.map(m => ({m, peso: Math.max(0.01, m.peso || 1)}));
+  const escolhidos = [];
+  while(escolhidos.length < n && pool.length){
+    const total = pool.reduce((s,x) => s + x.peso, 0);
+    let r = rng() * total, idx = 0;
+    for(; idx < pool.length - 1; idx++){ r -= pool[idx].peso; if(r <= 0) break; }
+    escolhidos.push(pool[idx].m);
+    pool.splice(idx, 1);
+  }
+  return escolhidos;
+}
+function diasDesdeUltimoResgate(chave, periodoAtual){
+  const p = missionClaimsPorChave.get(chave);
+  if(!p || p === periodoAtual) return Infinity; // resgate desta mesma janela não conta como cooldown
+  return Math.floor((new Date(hojeStr()) - new Date(p)) / 86400000);
+}
+function elegivel(m, ctx, excluirChaves, periodoAtual){
+  if(excluirChaves.has(m.chave)) return false;
+  if(m.categoriaAlvo && !ctx.categoriasComHabito.has(m.categoriaAlvo)) return false;
+  if(m.elegivelExtra && !m.elegivelExtra(ctx)) return false;
+  if(m.maximoPossivel && m.alvo > m.maximoPossivel(ctx)) return false;
+  if(diasDesdeUltimoResgate(m.chave, periodoAtual) < (m.cooldown || 0)) return false;
+  return true;
+}
+function qtdMissoesPara(prefixo, data){
+  const rng = criarRng(`${currentUser?.id || ''}|${prefixo}-qtd|${dateStr(data)}`);
+  return 4 + Math.floor(rng() * 3); // 4, 5 ou 6
+}
+function selecionarMissoesDiarias(dataAlvo, ctx, excluirChaves){
+  const periodoAtual = dateStr(dataAlvo);
+  const quantidade = qtdMissoesPara('diarias', dataAlvo);
+  const rng = criarRng(`${currentUser?.id || ''}|diarias|${periodoAtual}`);
+  const especiais = MISSOES_DIA_ESPECIAL[dataAlvo.getDay()] || [];
+  const personalizadas = gerarMissoesPersonalizadas();
+  let pool = [...BANCO_DIARIAS, ...personalizadas];
+  if(rng() < 0.28){
+    const surpresas = BANCO_SURPRESA.filter(m => elegivel(m, ctx, excluirChaves, periodoAtual));
+    if(surpresas.length) pool.push(surpresas[Math.floor(rng() * surpresas.length)]);
+  }
+
+  const prioritarias = especiais.filter(m => elegivel(m, ctx, excluirChaves, periodoAtual)).slice(0, Math.min(2, quantidade));
+  const jaEscolhidas = new Set(prioritarias.map(m => m.chave));
+  const resto = pool.filter(m => elegivel(m, ctx, excluirChaves, periodoAtual) && !jaEscolhidas.has(m.chave));
+  let escolhidas = [...prioritarias, ...sortearSemReposicao(rng, resto, quantidade - prioritarias.length)];
+
+  if(escolhidas.length < quantidade){
+    const jaTem = new Set(escolhidas.map(m => m.chave));
+    const semExclusao = [...especiais, ...pool].filter(m => elegivel(m, ctx, new Set(), periodoAtual) && !jaTem.has(m.chave));
+    escolhidas.push(...sortearSemReposicao(rng, semExclusao, quantidade - escolhidas.length));
+  }
+  return escolhidas;
+}
+function selecionarMissoesSemanais(segundaAlvo, ctx, excluirChaves){
+  const periodoAtual = dateStr(segundaAlvo);
+  const quantidade = qtdMissoesPara('semanais', segundaAlvo);
+  const rng = criarRng(`${currentUser?.id || ''}|semanais|${periodoAtual}`);
+  const elegiveis = BANCO_SEMANAIS.filter(m => elegivel(m, ctx, excluirChaves, periodoAtual));
+  let escolhidas = sortearSemReposicao(rng, elegiveis, quantidade);
+  if(escolhidas.length < quantidade){
+    const jaTem = new Set(escolhidas.map(m => m.chave));
+    const semExclusao = BANCO_SEMANAIS.filter(m => elegivel(m, ctx, new Set(), periodoAtual) && !jaTem.has(m.chave));
+    escolhidas.push(...sortearSemReposicao(rng, semExclusao, quantidade - escolhidas.length));
+  }
+  return escolhidas;
+}
+function selecionarDesafioSemana(segundaAlvo, ctx, excluirChaves){
+  const rng = criarRng(`${currentUser?.id || ''}|desafio|${dateStr(segundaAlvo)}`);
+  const periodoAtual = dateStr(segundaAlvo);
+  let pool = BANCO_DESAFIO.filter(m => elegivel(m, ctx, excluirChaves, periodoAtual));
+  if(!pool.length) pool = BANCO_DESAFIO.filter(m => elegivel(m, ctx, new Set(), periodoAtual));
+  if(!pool.length) pool = BANCO_DESAFIO;
+  return pool[Math.floor(rng() * pool.length)];
+}
 
 /* Todos os avatares são livres para qualquer usuário escolher — não são mais vendidos na Loja. */
 const AVATARES = [
@@ -1135,20 +1345,46 @@ const AVATARES = [
 const RARIDADE_COR = {comum:'var(--muted)', raro:'var(--blue)', 'épico':'var(--violet)', 'lendário':'var(--amber)'};
 
 /* Vantagens dentro do app */
+/* ============================================================
+   LOJA — economia de recompensa pessoal.
+   Cada item é só dados: nome, descrição, preço, categoria, raridade,
+   limite de uso (usageLimit) e período desse limite (usagePeriod: 'week',
+   'month', 'once' ou 'N_months'). Adicionar uma recompensa nova é só
+   empurrar um objeto aqui — o motor de limites (mais abaixo) não muda.
+   Moedas continuam vindo exclusivamente do resgate de missões.
+   ============================================================ */
 const loja = [
-  {img:'rewards/congelar.svg',      nome:'Congelar sequência',    desc:'Protege sua streak por um dia perdido.', preco:120},
-  {img:'rewards/xp-dobro.svg',      nome:'XP em dobro (24h)',     desc:'Todos os hábitos valem o dobro por um dia.', preco:200},
-  {img:'rewards/tema-aurora.svg',   nome:'Tema Aurora',           desc:'Uma paleta verde-azulada para o painel.', preco:350},
-  {img:'rewards/tema-por-do-sol.svg', nome:'Tema Pôr do sol',     desc:'O visual laranja que você já conhece.', preco:350},
-  {img:'rewards/relatorios.svg',    nome:'Relatórios avançados',  desc:'Gráficos por hora e comparativos anuais.', preco:420},
-  {img:'rewards/meta-extra.svg',    nome:'Slot de meta extra',    desc:'Acompanhe mais uma meta ao mesmo tempo.', preco:150},
-  /* Recompensas da vida real — o usuário se dá o presente fora do app */
-  {img:'rewards/doce.svg',     nome:'Doce ou lanche favorito', desc:'Um mimo rápido pra comemorar o progresso.', preco:80},
-  {img:'rewards/ifood.svg',    nome:'Pedir comida (iFood)',    desc:'Peça sua comida favorita sem pesar na consciência.', preco:230},
-  {img:'rewards/tempo-livre.svg', nome:'Tarde de descanso sem culpa', desc:'Um tempo só seu, sem pensar em produtividade.', preco:140},
-  {img:'rewards/sair.svg',     nome:'Sair para se divertir',   desc:'Cinema, passeio, o que bater vontade.', preco:190},
-  {img:'rewards/premium.svg',  nome:'Recompensa premium',      desc:'Uma experiência especial — você trabalhou duro pra isso.', preco:420},
-  {img:'rewards/comprar.svg',  nome:'Comprar algo que você quer', desc:'A recompensa mais cara — guarde moedas pra ela.', preco:650},
+  // ---- Sistema ----
+  {chave:'sis_congelar',   img:'rewards/congelar.svg',        nome:'Congelar sequência',   desc:'Protege sua streak por um dia perdido.',            preco:100, categoria:'Sistema', raridade:'raro',    usageLimit:1, usagePeriod:'week'},
+  {chave:'sis_xpdobro',    img:'rewards/xp-dobro.svg',        nome:'XP em dobro (24h)',    desc:'Todos os hábitos valem o dobro por um dia.',        preco:150, categoria:'Sistema', raridade:'raro',    usageLimit:2, usagePeriod:'month'},
+  {chave:'sis_aurora',     img:'rewards/tema-aurora.svg',     nome:'Tema Aurora',          desc:'Uma paleta verde-azulada para o painel.',           preco:200, categoria:'Sistema', raridade:'épico',   usageLimit:1, usagePeriod:'once'},
+  {chave:'sis_pordosol',   img:'rewards/tema-por-do-sol.svg', nome:'Tema Pôr do sol',      desc:'O visual laranja que você já conhece.',             preco:200, categoria:'Sistema', raridade:'épico',   usageLimit:1, usagePeriod:'once'},
+  {chave:'sis_relatorios', img:'rewards/relatorios.svg',      nome:'Relatórios avançados', desc:'Gráficos por hora e comparativos anuais.',          preco:300, categoria:'Sistema', raridade:'épico',   usageLimit:1, usagePeriod:'once'},
+  {chave:'sis_metaextra',  img:'rewards/meta-extra.svg',      nome:'Slot de meta extra',   desc:'Acompanhe mais uma meta ao mesmo tempo.',           preco:250, categoria:'Sistema', raridade:'épico',   usageLimit:1, usagePeriod:'once'},
+
+  // ---- Lazer ----
+  {chave:'laz_filme',    img:'rewards/filme.svg',      nome:'Noite de filme',              desc:'Aquele filme ou série que você tava guardando.',                              preco:100, categoria:'Lazer', raridade:'raro',  usageLimit:1, usagePeriod:'week'},
+  {chave:'laz_jogo',     img:'rewards/jogo.svg',       nome:'Sessão de jogo',              desc:'Um tempo livre pra jogar sem culpa.',                                         preco:80,  categoria:'Lazer', raridade:'comum', usageLimit:1, usagePeriod:'week'},
+  {chave:'laz_descanso', img:'rewards/tempo-livre.svg',nome:'Tarde de descanso',           desc:'Um tempo só seu, sem pensar em produtividade.',                               preco:150, categoria:'Lazer', raridade:'raro',  usageLimit:1, usagePeriod:'week'},
+  {chave:'laz_sair',     img:'rewards/sair.svg',       nome:'Sair para se divertir',       desc:'Cinema, passeio, o que bater vontade.',                                       preco:250, categoria:'Lazer', raridade:'épico', usageLimit:2, usagePeriod:'month'},
+  {chave:'laz_futebol',  img:'rewards/futebol.svg',    nome:'Noite de futebol',            desc:'Reservar uma noite para acompanhar futebol e aproveitar o jogo sem outras obrigações.', preco:110, categoria:'Lazer', raridade:'raro',  usageLimit:1, usagePeriod:'week'},
+  {chave:'laz_maratona', img:'rewards/maratona.svg',   nome:'Maratona de série',           desc:'Uma noite para assistir alguns episódios daquela série que você está acompanhando.',    preco:130, categoria:'Lazer', raridade:'raro',  usageLimit:1, usagePeriod:'week'},
+
+  // ---- Comida ----
+  {chave:'com_lanche',    img:'rewards/lanche.svg',    nome:'Lanche especial',        desc:'Aquele lanche que você não pede toda hora.',                        preco:120, categoria:'Comida', raridade:'raro',  usageLimit:1, usagePeriod:'week'},
+  {chave:'com_sobremesa', img:'rewards/sobremesa.svg', nome:'Sobremesa especial',     desc:'Escolher uma sobremesa que você realmente gosta e transformar em uma pequena recompensa.', preco:180, categoria:'Comida', raridade:'raro', usageLimit:1, usagePeriod:'month'},
+  {chave:'com_hamburguer',img:'rewards/hamburguer.svg',nome:'Hambúrguer artesanal',   desc:'Um hambúrguer especial escolhido como recompensa pelo esforço acumulado.', preco:280, categoria:'Comida', raridade:'épico', usageLimit:1, usagePeriod:'month'},
+  {chave:'com_refeicao',  img:'rewards/refeicao.svg',  nome:'Refeição especial',      desc:'Um jantar ou almoço fora da rotina.',                               preco:300, categoria:'Comida', raridade:'épico', usageLimit:1, usagePeriod:'month'},
+  {chave:'com_pizza',     img:'rewards/pizza.svg',     nome:'Pizza favorita',         desc:'Uma pizza escolhida especialmente como recompensa do mês.',        preco:350, categoria:'Comida', raridade:'épico', usageLimit:1, usagePeriod:'month'},
+  {chave:'com_ifood',     img:'rewards/ifood.svg',     nome:'Pedir comida (iFood)',   desc:'Uma recompensa financeira de verdade — guarde moedas pra ela.',     preco:400, categoria:'Comida', raridade:'épico', usageLimit:1, usagePeriod:'month'},
+
+  // ---- Compras pessoais ----
+  {chave:'per_pequeno', img:'rewards/comprar.svg',      nome:'Comprar algo pequeno que quero',        desc:'Aquela coisinha pequena da sua lista.',                    preco:300,  categoria:'Compras pessoais', raridade:'épico',    usageLimit:1, usagePeriod:'month'},
+  {chave:'per_livro',   img:'rewards/livro.svg',        nome:'Comprar um livro',                       desc:'Um livro que você realmente queira ler, estudar ou adicionar à sua coleção.', preco:280, categoria:'Compras pessoais', raridade:'épico', usageLimit:1, usagePeriod:'month'},
+  {chave:'per_presente',img:'rewards/presente.svg',     nome:'Comprar algo que quero há algum tempo', desc:'Aquilo que você vem adiando comprar.',                     preco:500,  categoria:'Compras pessoais', raridade:'épico',    usageLimit:1, usagePeriod:'month'},
+  {chave:'per_hobby',   img:'rewards/hobby-grande.svg', nome:'Comprar algo maior para hobby',         desc:'Um upgrade de verdade pro seu hobby.',                     preco:600,  categoria:'Compras pessoais', raridade:'lendário', usageLimit:1, usagePeriod:'month'},
+  {chave:'per_grande',  img:'rewards/trofeu-grande.svg',nome:'Grande recompensa pessoal',              desc:'Algo grande — pra quando o esforço acumulado valeu a pena.', preco:800,  categoria:'Compras pessoais', raridade:'lendário', usageLimit:1, usagePeriod:'2_months'},
+  {chave:'per_premium', img:'rewards/premium.svg',      nome:'Recompensa premium',                     desc:'Objetivo de longo prazo — uma experiência especial.',      preco:1000, categoria:'Compras pessoais', raridade:'lendário', usageLimit:1, usagePeriod:'3_months'},
 ];
 
 
@@ -1193,7 +1429,7 @@ const titulos = {
   relatorios:['Relatórios','Resumos prontos para revisar ou compartilhar.'],
   conquistas:['Conquistas','O que você já desbloqueou.'],
   missoes:['Missões','Desafios curtos com recompensa.'],
-  loja:['Loja','Gaste suas moedas em vantagens e temas.'],
+  loja:['Loja','Suas moedas vêm só das missões — troque por recompensas de verdade.'],
   configuracoes:['Configurações','Ajuste o app do seu jeito.'],
 };
 function go(page){
@@ -2055,85 +2291,251 @@ function renderConquistas(){
 }
 
 /* ===================== MISSÕES ===================== */
-let missionClaims = new Set(); // 'chave|periodo' já resgatados
+let missionClaims = new Set();            // 'chave|periodo' já resgatados
+let missionClaimsPorChave = new Map();    // chave -> period_key mais recente (pra cooldown)
+let missoesAtivasPorChave = new Map();    // chave -> missão selecionada nesta renderização (pro clique de resgatar)
+
 function periodoDia(){ return hojeStr(); }
 function periodoSemana(){ return dateStr(segundaDe(new Date())); }
+
 async function loadMissionClaims(){
   const { data, error } = await supabase.from('mission_claims').select('mission_key, period_key');
   if(error) return;
   missionClaims = new Set(data.map(r => `${r.mission_key}|${r.period_key}`));
+  missionClaimsPorChave = new Map();
+  data.forEach(r => {
+    const atual = missionClaimsPorChave.get(r.mission_key);
+    if(!atual || r.period_key > atual) missionClaimsPorChave.set(r.mission_key, r.period_key);
+  });
   renderMissoes();
 }
-function missaoHTML(m, periodo){
-  const at = Math.min(m.alvo, m.calcAt());
-  const pc = Math.round(at / m.alvo * 100);
-  const pronto = at >= m.alvo;
+
+/* Reúne, num único lugar, tudo que as missões precisam saber sobre o estado real do usuário. */
+function construirContextoMissoes(){
+  const hoje = hojeStr();
+  const segunda = segundaDe(new Date());
+  const diasSemanaStr = Array.from({length:7}, (_,i) => { const d = new Date(segunda); d.setDate(segunda.getDate()+i); return dateStr(d); });
+  const logsHoje = habitLogRows.filter(r => r.data === hoje);
+  const logsSemana = habitLogRows.filter(r => diasSemanaStr.includes(r.data));
+  const habitXpMap = new Map(habits.map(h => [h.id, h.xp]));
+  const habitCatMap = new Map(habits.map(h => [h.id, h.cat]));
+
+  const concluidosHoje = habits.filter(h => h.done).length;
+  const xpHoje = habits.filter(h => h.done).reduce((s,h) => s + h.xp, 0);
+  const xpSemana = logsSemana.reduce((s,r) => s + (habitXpMap.get(r.habit_id) || 0), 0);
+  const diasAtivosSemana = new Set(logsSemana.map(r => r.data)).size;
+  const totalHabitosSemana = logsSemana.length;
+
+  const porDia = {};
+  logsSemana.forEach(r => { porDia[r.data] = (porDia[r.data]||0) + 1; });
+  const maxHabitosUmDia = Object.values(porDia).reduce((m,n) => Math.max(m,n), 0);
+  const diasComPeloMenos3 = Object.values(porDia).filter(n => n >= 3).length;
+
+  const catHoje = {};
+  habits.filter(h => h.done).forEach(h => { catHoje[h.cat] = (catHoje[h.cat]||0) + 1; });
+
+  const diasComCategoriaSemanaSets = {};
+  logsSemana.forEach(r => {
+    const cat = habitCatMap.get(r.habit_id); if(!cat) return;
+    if(!diasComCategoriaSemanaSets[cat]) diasComCategoriaSemanaSets[cat] = new Set();
+    diasComCategoriaSemanaSets[cat].add(r.data);
+  });
+  const diasComCategoriaSemana = {};
+  Object.keys(diasComCategoriaSemanaSets).forEach(k => { diasComCategoriaSemana[k] = diasComCategoriaSemanaSets[k].size; });
+
+  const diasComAlgumHabito = new Set(habitLogRows.map(r => r.data));
+  let sequenciaGeral = 0;
+  { const cursor = new Date();
+    if(!diasComAlgumHabito.has(dateStr(cursor))) cursor.setDate(cursor.getDate() - 1);
+    while(diasComAlgumHabito.has(dateStr(cursor))){ sequenciaGeral++; cursor.setDate(cursor.getDate() - 1); }
+  }
+
+  const totalHabitosCadastrados = habits.length;
+  const xpMaximoPossivelHoje = habits.reduce((s,h) => s + h.xp, 0);
+
+  return {
+    hoje, logsHoje, logsSemana, concluidosHoje, xpHoje, xpSemana, diasAtivosSemana, totalHabitosSemana,
+    maxHabitosUmDia, diasComPeloMenos3, catHoje, diasComCategoriaSemana, sequenciaGeral,
+    totalHabitosCadastrados, xpMaximoPossivelHoje,
+    antesDasHoras: h => logsHoje.some(r => new Date(r.created_at).getHours() < h),
+    categoriasComHabito: new Set(habits.map(h => h.cat)),
+  };
+}
+
+const DIFICULDADE_COR = {facil:'green', normal:'violet', dificil:'amber', desafio:'pink'};
+const DIFICULDADE_LABEL = {facil:'Fácil', normal:'Normal', dificil:'Difícil', desafio:'Desafio'};
+function missaoHTML(m, periodo, ctx){
+  const atRaw = m.calcAt(ctx);
+  const at = Math.min(m.alvo, atRaw);
+  const pc = m.alvo ? Math.round(at / m.alvo * 100) : 100;
+  const pronto = atRaw >= m.alvo;
   const resgatada = missionClaims.has(`${m.chave}|${periodo}`);
   const label = resgatada ? 'Resgatada' : pronto ? 'Resgatar' : `${at}/${m.alvo}`;
+  const corBarra = pronto ? 'green' : (DIFICULDADE_COR[m.dificuldade] || 'violet');
   return `<div class="mission card" style="margin-bottom:10px;background:var(--card-2)">
     <div class="em">${m.em}</div>
     <div class="txt">
-      <strong>${m.nome}</strong>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <strong>${m.nome}</strong>
+        ${m.dificuldade ? `<span class="tag" style="font-size:10.5px;padding:2px 8px">${DIFICULDADE_LABEL[m.dificuldade]}</span>` : ''}
+      </div>
       ${m.desc ? `<p>${m.desc}</p>` : ''}
-      <div class="bar ${pronto?'green':'violet'} sm" style="max-width:340px"><i style="width:${pc}%"></i></div>
+      <div class="bar ${corBarra} sm" style="max-width:340px"><i style="width:${pc}%"></i></div>
     </div>
-    <span class="reward">+${m.xp} XP · 🪙 ${m.moedas}</span>
+    <span class="reward">🪙 ${m.moedas}</span>
     <button class="btn ${pronto && !resgatada?'primary':''}" data-claim="${m.chave}|${periodo}" ${pronto && !resgatada?'':'disabled'}>${label}</button>
   </div>`;
 }
 function renderMissoes(){
-  $('#dailyMissions').innerHTML  = MISSOES_DIA.map(m => missaoHTML(m, periodoDia())).join('');
-  $('#weeklyMissions').innerHTML = MISSOES_SEMANA.map(m => missaoHTML(m, periodoSemana())).join('');
+  const ctx = construirContextoMissoes();
+  const hojeDate = new Date();
+  const ontemDate = new Date(hojeDate); ontemDate.setDate(ontemDate.getDate() - 1);
+  const ontemChaves = new Set(selecionarMissoesDiarias(ontemDate, ctx, new Set()).map(m => m.chave));
+  const diarias = selecionarMissoesDiarias(hojeDate, ctx, ontemChaves);
+
+  const segunda = segundaDe(hojeDate);
+  const semanaPassada = new Date(segunda); semanaPassada.setDate(semanaPassada.getDate() - 7);
+  const semanaPassadaChaves = new Set(selecionarMissoesSemanais(semanaPassada, ctx, new Set()).map(m => m.chave));
+  const semanais = selecionarMissoesSemanais(segunda, ctx, semanaPassadaChaves);
+  const desafioAnterior = selecionarDesafioSemana(semanaPassada, ctx, new Set());
+  const desafio = selecionarDesafioSemana(segunda, ctx, new Set([desafioAnterior.chave]));
+
+  missoesAtivasPorChave = new Map();
+  [...diarias, ...semanais, desafio].forEach(m => missoesAtivasPorChave.set(m.chave, m));
+
+  $('#dailyMissions').innerHTML = diarias.map(m => missaoHTML(m, periodoDia(), ctx)).join('');
+  $('#weeklyMissions').innerHTML = semanais.map(m => missaoHTML(m, periodoSemana(), ctx)).join('');
+  $('#desafioSemana').innerHTML = missaoHTML(desafio, periodoSemana(), ctx);
 
   const meiaNoite = new Date(); meiaNoite.setHours(24,0,0,0);
-  const horasRestantes = Math.round((meiaNoite - new Date()) / 3600000);
-  $('#renovaDia').textContent = `renova em ${horasRestantes}h`;
+  const horasRestantes = Math.max(1, Math.round((meiaNoite - new Date()) / 3600000));
+  $('#renovaDia').textContent = horasRestantes >= 20 ? 'renova amanhã' : `renova em ${horasRestantes}h`;
   const diasParaDomingo = (7 - new Date().getDay()) % 7;
   $('#renovaSemana').textContent = diasParaDomingo === 0 ? 'renova hoje à noite' : `renova em ${diasParaDomingo} dia${diasParaDomingo>1?'s':''}`;
 }
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-claim]'); if(!b) return;
   const [chave, periodo] = b.dataset.claim.split('|');
-  const m = [...MISSOES_DIA, ...MISSOES_SEMANA].find(x => x.chave === chave);
+  const m = missoesAtivasPorChave.get(chave);
   if(!m || missionClaims.has(`${chave}|${periodo}`)) return;
+  if(m.calcAt(construirContextoMissoes()) < m.alvo) return;
   b.disabled = true;
   const { error } = await supabase.from('mission_claims').insert({mission_key: chave, period_key: periodo});
   if(error){ toast('Não foi possível resgatar — pode já ter sido resgatada.'); renderMissoes(); return; }
   missionClaims.add(`${chave}|${periodo}`);
+  missionClaimsPorChave.set(chave, periodo);
   coins += m.moedas; updateCoins(); syncCoins();
-  adjustXp(m.xp);
   renderMissoes();
-  toast(`Missão resgatada · +${m.xp} XP e ${m.moedas} moedas`);
+  toast(`Missão resgatada · +${m.moedas} moedas`);
 });
 
 /* ===================== LOJA ===================== */
-function updateCoins(){ $('#coinTop').textContent = coins; $('#coinShop').textContent = coins; renderShop(); }
+let rewardRedemptions = []; // [{reward_key, period_key}] — histórico de resgates, pra checar os limites de uso
+async function loadRewardRedemptions(){
+  const { data, error } = await supabase.from('reward_redemptions').select('reward_key, period_key');
+  if(error) return;
+  rewardRedemptions = data;
+  renderShop();
+}
+function contagemResgatesNoPeriodo(chave, periodoAtual){
+  return rewardRedemptions.filter(r => r.reward_key === chave && r.period_key === periodoAtual).length;
+}
+/* usagePeriod: 'week' | 'month' | 'once' | 'N_months' (ex.: '2_months', '3_months') */
+function mesesDoPeriodo(usagePeriod){
+  if(usagePeriod === 'month') return 1;
+  const m = /^(\d+)_months?$/.exec(usagePeriod || '');
+  return m ? +m[1] : null;
+}
+function periodoAtualRecompensa(usagePeriod){
+  if(usagePeriod === 'once') return 'once';
+  if(usagePeriod === 'week') return dateStr(segundaDe(new Date()));
+  const n = mesesDoPeriodo(usagePeriod) || 1;
+  const hoje = new Date();
+  const bucket = Math.floor(hoje.getMonth() / n);
+  return `${hoje.getFullYear()}-${n}m${bucket}`;
+}
+function proximoResetRecompensa(usagePeriod){
+  if(usagePeriod === 'once') return null;
+  const hoje = new Date();
+  if(usagePeriod === 'week'){
+    const seg = segundaDe(hoje);
+    const prox = new Date(seg); prox.setDate(seg.getDate() + 7);
+    return prox;
+  }
+  const n = mesesDoPeriodo(usagePeriod) || 1;
+  const bucket = Math.floor(hoje.getMonth() / n);
+  const proxIndiceMes = (bucket + 1) * n;
+  return new Date(hoje.getFullYear() + Math.floor(proxIndiceMes / 12), proxIndiceMes % 12, 1);
+}
+function formatarDataCurta(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
+function textoLimiteRecompensa(it){
+  if(it.usagePeriod === 'once') return 'Compra única';
+  if(it.usagePeriod === 'week') return `${it.usageLimit}× por semana`;
+  const n = mesesDoPeriodo(it.usagePeriod);
+  return n === 1 ? `${it.usageLimit}× por mês` : `${it.usageLimit}× a cada ${n} meses`;
+}
+
+const CATEGORIAS_LOJA = ['Sistema', 'Lazer', 'Comida', 'Compras pessoais'];
+function shopCardHTML(it){
+  const periodoAtual = periodoAtualRecompensa(it.usagePeriod);
+  const usos = contagemResgatesNoPeriodo(it.chave, periodoAtual);
+  const limiteAtingido = it.usageLimit != null && usos >= it.usageLimit;
+  const semMoedas = coins < it.preco;
+  const podeComprar = !limiteAtingido && !semMoedas;
+
+  let label, nota = '';
+  if(limiteAtingido){
+    label = it.usagePeriod === 'once' ? '🔒 Já resgatado' : '🔒 Limite atingido';
+    const reset = proximoResetRecompensa(it.usagePeriod);
+    if(reset) nota = `Disponível novamente em ${formatarDataCurta(reset)}`;
+  } else if(semMoedas){
+    label = `🪙 Faltam ${it.preco - coins}`;
+  } else {
+    label = 'Resgatar';
+  }
+
+  return `<div class="card shop">
+    <div class="art"><img src="${it.img}" alt="${it.nome}"></div>
+    <h4>${it.nome}</h4>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">
+      <span class="tag" style="font-size:10.5px;padding:2px 8px;color:${RARIDADE_COR[it.raridade] || 'inherit'}">${it.raridade}</span>
+      <span class="tag" style="font-size:10.5px;padding:2px 8px">${textoLimiteRecompensa(it)}</span>
+    </div>
+    <p>${it.desc}</p>
+    ${nota ? `<p style="color:var(--muted-2);font-size:11px;margin-top:-10px">${nota}</p>` : ''}
+    <div class="buy">
+      <span class="price">🪙 ${it.preco}</span>
+      <button class="btn ${podeComprar?'primary':''}" data-buy="${it.chave}" ${podeComprar?'':'disabled'}>${label}</button>
+    </div>
+  </div>`;
+}
 function renderShop(){
-  $('#shopGrid').innerHTML = loja.map((it,i) => {
-    const podeComprar = coins >= it.preco;
-    const label = podeComprar ? 'Comprar' : 'Moedas insuficientes';
-    return `<div class="card shop">
-      <div class="art"><img src="${it.img}" alt="${it.nome}"></div>
-      <h4>${it.nome}</h4>
-      <p>${it.desc}</p>
-      <div class="buy">
-        <span class="price">🪙 ${it.preco}</span>
-        <button class="btn ${podeComprar?'primary':''}" data-buy="${i}" ${podeComprar?'':'disabled'}>${label}</button>
-      </div>
-    </div>`;
+  $('#shopGrid').innerHTML = CATEGORIAS_LOJA.map(cat => {
+    const itens = loja.filter(it => it.categoria === cat);
+    if(!itens.length) return '';
+    return `<h3 style="margin:24px 0 14px;font-size:15px">${cat}</h3><div class="cols c3">${itens.map(shopCardHTML).join('')}</div>`;
   }).join('');
 }
+function updateCoins(){ $('#coinTop').textContent = coins; $('#coinShop').textContent = coins; renderShop(); }
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-buy]'); if(!b) return;
-  const it = loja[+b.dataset.buy];
+  const it = loja.find(x => x.chave === b.dataset.buy);
+  if(!it) return;
+  const periodoAtual = periodoAtualRecompensa(it.usagePeriod);
+  const usos = contagemResgatesNoPeriodo(it.chave, periodoAtual);
+  if(it.usageLimit != null && usos >= it.usageLimit) return;
   if(coins < it.preco) return;
+  b.disabled = true;
+  const { error } = await supabase.from('reward_redemptions').insert({reward_key: it.chave, period_key: periodoAtual});
+  if(error){ toast('Não foi possível resgatar essa recompensa.'); renderShop(); return; }
+  rewardRedemptions.push({reward_key: it.chave, period_key: periodoAtual});
   coins -= it.preco; updateCoins(); syncCoins();
   if(profile){
     profile.moedas_gastas = (profile.moedas_gastas || 0) + it.preco;
     supabase.from('profiles').update({moedas_gastas: profile.moedas_gastas}).eq('id', currentUser.id).then(({error}) => { if(error) toast('Não foi possível registrar a compra.'); });
   }
   if(typeof renderConquistas === 'function') renderConquistas();
-  toast(`${it.nome} comprado por ${it.preco} moedas.`);
+  toast(`${it.nome} resgatado por ${it.preco} moedas.`);
 });
 
 /* ===================== CONFIGURAÇÕES ===================== */
@@ -2205,6 +2607,7 @@ async function loadHabits(){
   renderHabits(); renderHabitCards(); renderResumo();
   await loadHabitLogs();
   await loadMissionClaims();
+  await loadRewardRedemptions();
 }
 renderShop();
 go(location.hash.slice(1) || 'hoje');
