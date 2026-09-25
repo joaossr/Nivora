@@ -346,13 +346,29 @@ select,input[type=text],input[type=time],input[type=number],input[type=date]{bac
   .grid{grid-template-columns:1fr 1fr;grid-template-areas:"hero streak" "prog xp" "donut side" "habits side"}
   .c3{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+.mobile-menu-btn{display:none}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(4,4,10,.6);z-index:75}
+.sidebar-backdrop.on{display:block}
 @media (max-width:1050px){
-  .sidebar{display:none}
+  .mobile-menu-btn{display:grid}
+  .sidebar{
+    position:fixed;top:0;left:0;height:100vh;z-index:80;
+    transform:translateX(-100%);transition:transform .25s ease;
+  }
+  .sidebar.mobile-open{transform:translateX(0);box-shadow:20px 0 60px rgba(0,0,0,.5)}
+  .sidebar .toggle{display:none}
   .grid{grid-template-columns:1fr;grid-template-areas:none}
   .grid > *{grid-area:auto !important}
   .cols{grid-template-columns:1fr !important}
   .main{padding:18px}
-  .greet h2{font-size:21px}
+  .greet > div{min-width:0}
+  .greet h2{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .greet p{display:none}
+  .wave{font-size:22px}
+  .top-actions{gap:6px}
+  .top-actions .icon-btn{width:38px;height:38px;border-radius:11px}
+  .coins{height:38px;padding:0 10px;border-radius:11px;font-size:12.5px}
+  .mobile-menu-btn{width:38px;height:38px;border-radius:11px}
   .hero{padding:28px 24px}.hero h2{font-size:28px}
   .hero-quote,.date-pill{display:none}
   .cal{gap:5px}.cell{padding:5px;font-size:11px}
@@ -407,10 +423,12 @@ select,input[type=text],input[type=time],input[type=number],input[type=date]{bac
       </nav>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <!-- ================= MAIN ================= -->
   <main class="main">
     <header class="topbar">
+      <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <div class="greet">
         <span class="wave">👋</span>
         <div>
@@ -1148,6 +1166,22 @@ $('#toggleBtn').addEventListener('click', () => {
   const col = sb.classList.contains('collapsed');
   $('#toggleBtn').setAttribute('aria-label', col ? 'Expandir menu lateral' : 'Retrair menu lateral');
 });
+
+/* Menu lateral em tela de celular: vira uma gaveta que desliza por cima do conteúdo. */
+function abrirMenuMobile(){
+  $('#sidebar').classList.add('mobile-open');
+  $('#sidebarBackdrop').classList.add('on');
+  $('#mobileMenuBtn').setAttribute('aria-expanded', 'true');
+}
+function fecharMenuMobile(){
+  $('#sidebar').classList.remove('mobile-open');
+  $('#sidebarBackdrop').classList.remove('on');
+  $('#mobileMenuBtn').setAttribute('aria-expanded', 'false');
+}
+$('#mobileMenuBtn').addEventListener('click', abrirMenuMobile);
+$('#sidebarBackdrop').addEventListener('click', fecharMenuMobile);
+$('#sidebar').addEventListener('click', e => { if(e.target.closest('.nav a')) fecharMenuMobile(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') fecharMenuMobile(); });
 
 /* ===================== ROTEADOR ===================== */
 const titulos = {
