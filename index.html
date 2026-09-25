@@ -757,7 +757,7 @@ select,input[type=text],input[type=time],input[type=number],input[type=date]{bac
           <div class="card-h"><h3>Lembretes</h3></div>
           <div class="srow"><div class="txt"><strong>Notificações diárias</strong><p>Um aviso para não perder a sequência.</p></div><button class="sw" aria-pressed="true" aria-label="Notificações diárias"></button></div>
           <div class="srow"><div class="txt"><strong>Horário do lembrete</strong><p>Enviado todos os dias nesse horário.</p></div><input type="time" value="19:00"></div>
-          <div class="srow"><div class="txt"><strong>Resumo semanal por e-mail</strong><p>Chega toda segunda de manhã.</p></div><button class="sw" aria-pressed="false" aria-label="Resumo semanal"></button></div>
+          <div class="srow"><div class="txt"><strong>Resumo semanal por e-mail</strong><p>Chega toda segunda de manhã, às 8h.</p></div><button class="sw" id="swResumoSemanal" aria-pressed="false" aria-label="Resumo semanal"></button></div>
         </div>
         <div class="card pad">
           <div class="card-h"><h3>Aparência e jogo</h3></div>
@@ -907,6 +907,7 @@ async function loadProfile(){
   renderProfile();
   renderResumo();
   updateCoins();
+  if($('#swResumoSemanal')) $('#swResumoSemanal').setAttribute('aria-pressed', !!profile?.resumo_semanal_email);
   if(typeof renderAvatarPicker === 'function') renderAvatarPicker();
   if(typeof renderTemaPicker === 'function') renderTemaPicker();
   if(typeof renderConquistas === 'function') renderConquistas();
@@ -2847,7 +2848,14 @@ document.addEventListener('click', e => {
   const sw = e.target.closest('.sw'); if(!sw) return;
   const on = sw.getAttribute('aria-pressed') === 'true';
   sw.setAttribute('aria-pressed', !on);
+  if(sw.id === 'swResumoSemanal') salvarResumoSemanal(!on);
 });
+async function salvarResumoSemanal(ativo){
+  const { error } = await supabase.from('profiles').update({resumo_semanal_email: ativo}).eq('id', currentUser.id);
+  if(error){ toast('Não foi possível salvar essa preferência.'); $('#swResumoSemanal').setAttribute('aria-pressed', !ativo); return; }
+  if(profile) profile.resumo_semanal_email = ativo;
+  toast(ativo ? 'Resumo semanal por e-mail ativado — chega toda segunda às 8h.' : 'Resumo semanal por e-mail desativado.');
+}
 
 $('#configNome').addEventListener('change', async e => {
   const nome = e.target.value.trim();
